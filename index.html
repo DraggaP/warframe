@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warframe Reminder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .task-checkbox:checked + label {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        .task-checkbox {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2 text-blue-400">
+                <i class="fas fa-gamepad mr-2"></i>Warframe Reminder
+            </h1>
+            <p class="text-gray-400">Track your daily and weekly tasks</p>
+        </header>
+
+        <main class="space-y-8">
+            <!-- Weekly Tasks Section -->
+            <section class="bg-gray-800 rounded-lg p-6 shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-purple-400">
+                        <i class="fas fa-calendar-week mr-2"></i>Weekly Tasks
+                    </h2>
+                    <button id="resetWeekly" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm transition-colors">
+                        <i class="fas fa-redo mr-1"></i>Reset Weekly
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="weeklyTasks">
+                    <!-- Weekly tasks will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Daily Tasks Section -->
+            <section class="bg-gray-800 rounded-lg p-6 shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-green-400">
+                        <i class="fas fa-calendar-day mr-2"></i>Daily Tasks
+                    </h2>
+                    <button id="resetDaily" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm transition-colors">
+                        <i class="fas fa-redo mr-1"></i>Reset Daily
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="dailyTasks">
+                    <!-- Daily tasks will be populated by JavaScript -->
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>Warframe Reminder App - Stay on top of your grind!</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
