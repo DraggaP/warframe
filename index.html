@@ -3,64 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warframe Reminder</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .task-checkbox:checked + label {
-            text-decoration: line-through;
-            opacity: 0.6;
-        }
-        .task-checkbox {
-            width: 1.25rem;
-            height: 1.25rem;
-        }
-    </style>
+    <title>Warframe Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-gray-900 text-white min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold mb-2 text-blue-400">
-                <i class="fas fa-gamepad mr-2"></i>Warframe Reminder
-            </h1>
-            <p class="text-gray-400">Track your daily and weekly tasks</p>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-grid"></div>
+    <div class="bg-vignette"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 40 40" fill="none">
+                        <path d="M20 2L4 12v16l16 10 16-10V12L20 2z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                        <path d="M20 8l-10 6v12l10 6 10-6V14L20 8z" stroke="currentColor" stroke-width="1" fill="none" opacity="0.5"/>
+                        <circle cx="20" cy="20" r="4" fill="currentColor" opacity="0.8"/>
+                    </svg>
+                    <div>
+                        <h1 class="logo-text">WARFRAME</h1>
+                        <span class="logo-sub">MISSION TRACKER</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="week-indicator">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="currentWeek">Week of --</span>
+                </div>
+                <div class="streak-badge" id="streakBadge" title="Consecutive weeks completed">
+                    <i class="fas fa-fire"></i>
+                    <span id="streakCount">0</span>
+                </div>
+            </div>
         </header>
 
-        <main class="space-y-8">
-            <!-- Weekly Tasks Section -->
-            <section class="bg-gray-800 rounded-lg p-6 shadow-lg">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-semibold text-purple-400">
-                        <i class="fas fa-calendar-week mr-2"></i>Weekly Tasks
-                    </h2>
-                    <button id="resetWeekly" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm transition-colors">
-                        <i class="fas fa-redo mr-1"></i>Reset Weekly
-                    </button>
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <button class="nav-btn active" data-tab="weekly">
+                <i class="fas fa-calendar-week"></i>
+                <span>Weekly</span>
+            </button>
+            <button class="nav-btn" data-tab="daily">
+                <i class="fas fa-sun"></i>
+                <span>Daily</span>
+            </button>
+            <button class="nav-btn" data-tab="history">
+                <i class="fas fa-clock-rotate-left"></i>
+                <span>History</span>
+            </button>
+            <button class="nav-btn" data-tab="boosters">
+                <i class="fas fa-bolt"></i>
+                <span>Boosters</span>
+            </button>
+            <button class="nav-btn" data-tab="events">
+                <i class="fas fa-star"></i>
+                <span>Events</span>
+            </button>
+        </nav>
+
+        <!-- Tab Content -->
+        <main class="tab-content">
+
+            <!-- ==================== WEEKLY TASKS ==================== -->
+            <section class="tab-panel active" id="tab-weekly">
+                <div class="panel-header">
+                    <div>
+                        <h2>Weekly Missions</h2>
+                        <p class="panel-subtitle">Reset every Monday</p>
+                    </div>
+                    <div class="panel-actions">
+                        <div class="progress-ring-container">
+                            <svg class="progress-ring" viewBox="0 0 48 48">
+                                <circle class="progress-ring-bg" cx="24" cy="24" r="20"/>
+                                <circle class="progress-ring-fill" id="weeklyProgressRing" cx="24" cy="24" r="20"/>
+                            </svg>
+                            <span class="progress-ring-text" id="weeklyProgressText">0%</span>
+                        </div>
+                        <button class="btn btn-danger btn-sm" id="resetWeekly">
+                            <i class="fas fa-rotate-right"></i> Reset
+                        </button>
+                    </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="weeklyTasks">
-                    <!-- Weekly tasks will be populated by JavaScript -->
+                <div class="tasks-grid" id="weeklyTasks"></div>
+            </section>
+
+            <!-- ==================== DAILY TASKS ==================== -->
+            <section class="tab-panel" id="tab-daily">
+                <div class="panel-header">
+                    <div>
+                        <h2>Daily Missions</h2>
+                        <p class="panel-subtitle">Auto-resets at midnight</p>
+                    </div>
+                    <div class="panel-actions">
+                        <div class="progress-ring-container">
+                            <svg class="progress-ring" viewBox="0 0 48 48">
+                                <circle class="progress-ring-bg" cx="24" cy="24" r="20"/>
+                                <circle class="progress-ring-fill" id="dailyProgressRing" cx="24" cy="24" r="20"/>
+                            </svg>
+                            <span class="progress-ring-text" id="dailyProgressText">0%</span>
+                        </div>
+                        <button class="btn btn-danger btn-sm" id="resetDaily">
+                            <i class="fas fa-rotate-right"></i> Reset
+                        </button>
+                    </div>
+                </div>
+                <div class="tasks-grid" id="dailyTasks"></div>
+            </section>
+
+            <!-- ==================== HISTORY ==================== -->
+            <section class="tab-panel" id="tab-history">
+                <div class="panel-header">
+                    <div>
+                        <h2>Weekly History</h2>
+                        <p class="panel-subtitle">Track your progress across weeks</p>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-ghost btn-sm" id="clearHistory">
+                            <i class="fas fa-trash"></i> Clear All
+                        </button>
+                    </div>
+                </div>
+                <div class="history-container" id="historyContainer">
+                    <div class="empty-state" id="historyEmpty">
+                        <i class="fas fa-hourglass-half"></i>
+                        <p>No history yet. Complete some weekly tasks to start tracking!</p>
+                    </div>
                 </div>
             </section>
 
-            <!-- Daily Tasks Section -->
-            <section class="bg-gray-800 rounded-lg p-6 shadow-lg">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-semibold text-green-400">
-                        <i class="fas fa-calendar-day mr-2"></i>Daily Tasks
-                    </h2>
-                    <button id="resetDaily" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm transition-colors">
-                        <i class="fas fa-redo mr-1"></i>Reset Daily
-                    </button>
+            <!-- ==================== BOOSTERS ==================== -->
+            <section class="tab-panel" id="tab-boosters">
+                <div class="panel-header">
+                    <div>
+                        <h2>Booster Plans</h2>
+                        <p class="panel-subtitle">Plan what to do when you get boosters</p>
+                    </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="dailyTasks">
-                    <!-- Daily tasks will be populated by JavaScript -->
+                <div class="boosters-grid" id="boostersGrid"></div>
+            </section>
+
+            <!-- ==================== EVENTS / CUSTOM ==================== -->
+            <section class="tab-panel" id="tab-events">
+                <div class="panel-header">
+                    <div>
+                        <h2>Custom Events & Tasks</h2>
+                        <p class="panel-subtitle">Track limited-time events and personal goals</p>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-accent btn-sm" id="addEventBtn">
+                            <i class="fas fa-plus"></i> Add Event
+                        </button>
+                    </div>
+                </div>
+                <div class="events-container" id="eventsContainer">
+                    <div class="empty-state" id="eventsEmpty">
+                        <i class="fas fa-calendar-plus"></i>
+                        <p>No active events. Add one to start tracking!</p>
+                    </div>
                 </div>
             </section>
         </main>
+    </div>
 
-        <footer class="text-center mt-12 text-gray-500 text-sm">
-            <p>Warframe Reminder App - Stay on top of your grind!</p>
-        </footer>
+    <!-- Add Event Modal -->
+    <div class="modal-overlay" id="eventModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-star"></i> Add Custom Event</h3>
+                <button class="modal-close" id="closeEventModal"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="eventName">Event Name</label>
+                    <input type="text" id="eventName" placeholder="e.g. Plague Star, Nightwave S5..." class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="eventIcon">Icon</label>
+                    <select id="eventIcon" class="form-input">
+                        <option value="fas fa-star">Star</option>
+                        <option value="fas fa-skull-crossbones">Skull</option>
+                        <option value="fas fa-virus">Virus</option>
+                        <option value="fas fa-trophy">Trophy</option>
+                        <option value="fas fa-flag">Flag</option>
+                        <option value="fas fa-fire">Fire</option>
+                        <option value="fas fa-bolt">Lightning</option>
+                        <option value="fas fa-ghost">Ghost</option>
+                        <option value="fas fa-dragon">Dragon</option>
+                        <option value="fas fa-wand-magic-sparkles">Magic</option>
+                        <option value="fas fa-meteor">Meteor</option>
+                        <option value="fas fa-shield-halved">Shield</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="eventColor">Color Theme</label>
+                    <div class="color-picker" id="eventColorPicker">
+                        <button class="color-swatch active" data-color="#00e5ff" style="background:#00e5ff"></button>
+                        <button class="color-swatch" data-color="#ffd54f" style="background:#ffd54f"></button>
+                        <button class="color-swatch" data-color="#ff5252" style="background:#ff5252"></button>
+                        <button class="color-swatch" data-color="#69f0ae" style="background:#69f0ae"></button>
+                        <button class="color-swatch" data-color="#e040fb" style="background:#e040fb"></button>
+                        <button class="color-swatch" data-color="#ff6e40" style="background:#ff6e40"></button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tasks (one per line)</label>
+                    <textarea id="eventTasks" class="form-input form-textarea" placeholder="Farm Hemocyte&#10;Get Plague Kripath&#10;Reach max standing..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="cancelEvent">Cancel</button>
+                <button class="btn btn-accent" id="saveEvent">Save Event</button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
