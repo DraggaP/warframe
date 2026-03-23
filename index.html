@@ -43,6 +43,52 @@
             </div>
         </header>
 
+        <!-- ==================== LIVE STATUS BAR ==================== -->
+        <div class="status-bar" id="statusBar">
+            <div class="status-bar-inner">
+                <div class="status-chip loading" id="chip-cetus">
+                    <i class="fas fa-sun"></i>
+                    <span class="chip-label">Cetus</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip loading" id="chip-earth">
+                    <i class="fas fa-earth-americas"></i>
+                    <span class="chip-label">Earth</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip loading" id="chip-vallis">
+                    <i class="fas fa-snowflake"></i>
+                    <span class="chip-label">Vallis</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip loading" id="chip-cambion">
+                    <i class="fas fa-virus"></i>
+                    <span class="chip-label">Cambion</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip loading" id="chip-zariman">
+                    <i class="fas fa-tower-broadcast"></i>
+                    <span class="chip-label">Zariman</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip loading" id="chip-duviri">
+                    <i class="fas fa-masks-theater"></i>
+                    <span class="chip-label">Duviri</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip chip-accent loading" id="chip-baro">
+                    <i class="fas fa-gem"></i>
+                    <span class="chip-label">Baro</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip loading" id="chip-construction">
+                    <i class="fas fa-industry"></i>
+                    <span class="chip-label">Fomorian</span>
+                    <span class="chip-value">--</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Navigation -->
         <nav class="main-nav">
             <button class="nav-btn active" data-tab="weekly">
@@ -52,6 +98,10 @@
             <button class="nav-btn" data-tab="daily">
                 <i class="fas fa-sun"></i>
                 <span>Daily</span>
+            </button>
+            <button class="nav-btn" data-tab="worldstate">
+                <i class="fas fa-globe"></i>
+                <span>World State</span>
             </button>
             <button class="nav-btn" data-tab="history">
                 <i class="fas fa-clock-rotate-left"></i>
@@ -114,6 +164,177 @@
                     </div>
                 </div>
                 <div class="tasks-grid" id="dailyTasks"></div>
+            </section>
+
+            <!-- ==================== WORLD STATE ==================== -->
+            <section class="tab-panel" id="tab-worldstate">
+                <div class="panel-header">
+                    <div>
+                        <h2>World State</h2>
+                        <p class="panel-subtitle">Live data from Warframe servers</p>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-accent btn-sm" id="refreshWorldState">
+                            <i class="fas fa-rotate"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="ws-grid" id="worldStateGrid">
+                    <!-- Sortie -->
+                    <div class="ws-card" id="ws-sortie">
+                        <div class="ws-card-header">
+                            <i class="fas fa-bomb" style="color:#ff5252"></i>
+                            <h3>Sortie</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Archon Hunt -->
+                    <div class="ws-card" id="ws-archon">
+                        <div class="ws-card-header">
+                            <i class="fas fa-dragon" style="color:#ff6e40"></i>
+                            <h3>Archon Hunt</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Steel Path -->
+                    <div class="ws-card" id="ws-steelpath">
+                        <div class="ws-card-header">
+                            <i class="fas fa-fire" style="color:#ffd54f"></i>
+                            <h3>Steel Path</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Arbitration -->
+                    <div class="ws-card" id="ws-arbitration">
+                        <div class="ws-card-header">
+                            <i class="fas fa-scale-balanced" style="color:#69f0ae"></i>
+                            <h3>Arbitration</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Void Trader -->
+                    <div class="ws-card" id="ws-baro">
+                        <div class="ws-card-header">
+                            <i class="fas fa-gem" style="color:#e040fb"></i>
+                            <h3>Void Trader</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Deal -->
+                    <div class="ws-card" id="ws-deals">
+                        <div class="ws-card-header">
+                            <i class="fas fa-tags" style="color:#ffd54f"></i>
+                            <h3>Daily Deals</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Duviri Choices -->
+                    <div class="ws-card" id="ws-duviri">
+                        <div class="ws-card-header">
+                            <i class="fas fa-masks-theater" style="color:#e040fb"></i>
+                            <h3>Duviri</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Construction Progress -->
+                    <div class="ws-card" id="ws-construction">
+                        <div class="ws-card-header">
+                            <i class="fas fa-industry" style="color:#ff5252"></i>
+                            <h3>Construction</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Nightwave (full width) -->
+                    <div class="ws-card ws-card-wide" id="ws-nightwave">
+                        <div class="ws-card-header">
+                            <i class="fas fa-radio" style="color:#00e5ff"></i>
+                            <h3>Nightwave</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Fissures (full width) -->
+                    <div class="ws-card ws-card-wide" id="ws-fissures">
+                        <div class="ws-card-header">
+                            <i class="fas fa-bolt" style="color:#ffd54f"></i>
+                            <h3>Void Fissures</h3>
+                            <div class="ws-card-header-actions">
+                                <select class="ws-filter" id="fissureFilter">
+                                    <option value="all">All Tiers</option>
+                                    <option value="Lith">Lith</option>
+                                    <option value="Meso">Meso</option>
+                                    <option value="Neo">Neo</option>
+                                    <option value="Axi">Axi</option>
+                                    <option value="Requiem">Requiem</option>
+                                    <option value="Omnia">Omnia</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Invasions (full width) -->
+                    <div class="ws-card ws-card-wide" id="ws-invasions">
+                        <div class="ws-card-header">
+                            <i class="fas fa-rocket" style="color:#ff6e40"></i>
+                            <h3>Invasions</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Events (full width) -->
+                    <div class="ws-card ws-card-wide" id="ws-events">
+                        <div class="ws-card-header">
+                            <i class="fas fa-calendar-star" style="color:#69f0ae"></i>
+                            <h3>Active Events</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- News (full width) -->
+                    <div class="ws-card ws-card-wide" id="ws-news">
+                        <div class="ws-card-header">
+                            <i class="fas fa-newspaper" style="color:#00e5ff"></i>
+                            <h3>News</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- ==================== HISTORY ==================== -->
