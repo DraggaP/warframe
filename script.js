@@ -150,6 +150,7 @@ function initApp() {
     setupResetButtons();
     setupEventModal();
     setupWorldState();
+    setupNotifications();
     fetchWorldState();
 }
 
@@ -523,6 +524,7 @@ async function fetchWorldState() {
         worldStateData = await res.json();
         renderStatusBar(worldStateData);
         renderWorldStateCards(worldStateData);
+        checkAlertRules(worldStateData);
     } catch (err) {
         console.error('Failed to fetch world state:', err);
     }
@@ -1022,6 +1024,306 @@ function renderActiveEvents(events) {
 }
 
 // --- News ---
+
+// ============================================
+// NOTIFICATIONS - Browser + Discord
+// ============================================
+
+const CYCLE_NAMES = {
+    cetusCycle: 'Cetus',
+    earthCycle: 'Earth',
+    vallisCycle: 'Orb Vallis',
+    cambionCycle: 'Cambion Drift',
+    zarimanCycle: 'Zariman',
+    duviriCycle: 'Duviri'
+};
+
+const CYCLE_STATES = {
+    cetusCycle: ['day', 'night'],
+    earthCycle: ['day', 'night'],
+    vallisCycle: ['warm', 'cold'],
+    cambionCycle: ['fass', 'vome'],
+    zarimanCycle: ['corpus', 'grineer'],
+    duviriCycle: ['joy', 'anger', 'envy', 'sorrow', 'fear']
+};
+
+// Track which alerts have already fired so we don't spam
+let firedAlerts = {};
+
+function setupNotifications() {
+    const notifModal = document.getElementById('notifModal');
+    const openBtn = document.getElementById('openNotifSettings');
+    const closeBtn = document.getElementById('closeNotifModal');
+    const closeBtn2 = document.getElementById('closeNotifBtn');
+
+    const browserToggle = document.getElementById('browserNotifToggle');
+    const discordToggle = document.getElementById('discordNotifToggle');
+    const webhookInput = document.getElementById('discordWebhookUrl');
+    const testBtn = document.getElementById('testDiscordBtn');
+
+    // Open/close modal
+    openBtn.addEventListener('click', () => { notifModal.classList.add('open'); refreshNotifUI(); });
+    const closeNotif = () => notifModal.classList.remove('open');
+    closeBtn.addEventListener('click', closeNotif);
+    closeBtn2.addEventListener('click', closeNotif);
+    notifModal.addEventListener('click', (e) => { if (e.target === notifModal) closeNotif(); });
+
+    // Browser notifications toggle
+    const browserEnabled = getStore('notif_browser', false);
+    browserToggle.checked = browserEnabled;
+    updateBrowserNotifStatus();
+
+    browserToggle.addEventListener('change', async () => {
+        if (browserToggle.checked) {
+            if ('Notification' in window) {
+                const perm = await Notification.requestPermission();
+                if (perm === 'granted') {
+                    setStore('notif_browser', true);
+                    updateBrowserNotifStatus();
+                } else {
+                    browserToggle.checked = false;
+                    setStore('notif_browser', false);
+                    updateBrowserNotifStatus();
+                }
+            } else {
+                browserToggle.checked = false;
+                alert('Your browser does not support notifications.');
+            }
+        } else {
+            setStore('notif_browser', false);
+            updateBrowserNotifStatus();
+        }
+    });
+
+    // Discord toggle + webhook
+    discordToggle.checked = getStore('notif_discord', false);
+    webhookInput.value = getStore('discord_webhook', '');
+
+    discordToggle.addEventListener('change', () => {
+        setStore('notif_discord', discordToggle.checked);
+    });
+
+    webhookInput.addEventListener('input', () => {
+        setStore('discord_webhook', webhookInput.value.trim());
+    });
+
+    // Test Discord
+    testBtn.addEventListener('click', () => {
+        const url = getStore('discord_webhook', '');
+        if (!url) { alert('Please enter a Discord webhook URL first.'); return; }
+        sendDiscordMessage(url, 'Warframe Tracker -- test notification. Your webhook is working!');
+    });
+
+    // Alert rules
+    setupAlertRuleModal();
+    renderAlertRules();
+}
+
+function updateBrowserNotifStatus() {
+    const el = document.getElementById('browserNotifStatus');
+    if (!('Notification' in window)) {
+        el.textContent = 'Not supported in this browser';
+        return;
+    }
+    const perm = Notification.permission;
+    const enabled = getStore('notif_browser', false);
+    if (enabled && perm === 'granted') {
+        el.textContent = 'Enabled -- notifications will appear on your desktop';
+        el.style.color = 'var(--success)';
+    } else if (perm === 'denied') {
+        el.textContent = 'Blocked by browser. Check your browser notification settings.';
+        el.style.color = 'var(--danger)';
+    } else {
+        el.textContent = 'Click toggle to enable';
+        el.style.color = '';
+    }
+}
+
+function refreshNotifUI() {
+    document.getElementById('browserNotifToggle').checked = getStore('notif_browser', false);
+    document.getElementById('discordNotifToggle').checked = getStore('notif_discord', false);
+    document.getElementById('discordWebhookUrl').value = getStore('discord_webhook', '');
+    updateBrowserNotifStatus();
+    renderAlertRules();
+}
+
+// --- Alert Rules ---
+
+function setupAlertRuleModal() {
+    const modal = document.getElementById('alertRuleModal');
+    const addBtn = document.getElementById('addAlertRuleBtn');
+    const closeBtn = document.getElementById('closeAlertRuleModal');
+    const cancelBtn = document.getElementById('cancelAlertRule');
+    const saveBtn = document.getElementById('saveAlertRule');
+    const cycleSelect = document.getElementById('ruleCycle');
+    const stateSelect = document.getElementById('ruleState');
+
+    // Update state options when cycle changes
+    cycleSelect.addEventListener('change', () => updateStateOptions(cycleSelect.value, stateSelect));
+
+    addBtn.addEventListener('click', () => {
+        modal.classList.add('open');
+        cycleSelect.selectedIndex = 0;
+        updateStateOptions(cycleSelect.value, stateSelect);
+        document.getElementById('ruleLeadTime').selectedIndex = 0;
+        document.getElementById('ruleSendBrowser').checked = true;
+        document.getElementById('ruleSendDiscord').checked = false;
+    });
+
+    const closeRule = () => modal.classList.remove('open');
+    closeBtn.addEventListener('click', closeRule);
+    cancelBtn.addEventListener('click', closeRule);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeRule(); });
+
+    saveBtn.addEventListener('click', () => {
+        const rules = getStore('alert_rules', []);
+        rules.push({
+            id: generateId(),
+            cycle: cycleSelect.value,
+            state: stateSelect.value,
+            leadMinutes: parseInt(document.getElementById('ruleLeadTime').value),
+            browser: document.getElementById('ruleSendBrowser').checked,
+            discord: document.getElementById('ruleSendDiscord').checked
+        });
+        setStore('alert_rules', rules);
+        renderAlertRules();
+        closeRule();
+    });
+}
+
+function updateStateOptions(cycleKey, selectEl) {
+    const states = CYCLE_STATES[cycleKey] || ['day', 'night'];
+    selectEl.innerHTML = states.map(s => `<option value="${s}">${capitalize(s)}</option>`).join('');
+}
+
+function renderAlertRules() {
+    const container = document.getElementById('alertRulesList');
+    const rules = getStore('alert_rules', []);
+
+    if (rules.length === 0) {
+        container.innerHTML = '<div class="alert-rules-empty">No alert rules yet. Add one to get notified!</div>';
+        return;
+    }
+
+    container.innerHTML = rules.map(rule => `
+        <div class="alert-rule-item" data-rule-id="${rule.id}">
+            <i class="fas fa-bell alert-rule-icon"></i>
+            <div class="alert-rule-text">
+                <strong>${CYCLE_NAMES[rule.cycle] || rule.cycle}</strong> &rarr; ${capitalize(rule.state)}
+                <div class="rule-detail">${rule.leadMinutes > 0 ? rule.leadMinutes + ' min before' : 'When it starts'}</div>
+            </div>
+            <div class="alert-rule-channels">
+                <i class="fas fa-desktop ${rule.browser ? 'active-channel' : ''}" title="Browser"></i>
+                <i class="fab fa-discord ${rule.discord ? 'active-discord' : ''}" title="Discord"></i>
+            </div>
+            <button class="alert-rule-delete" title="Delete rule"><i class="fas fa-trash"></i></button>
+        </div>
+    `).join('');
+
+    container.querySelectorAll('.alert-rule-delete').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const ruleId = btn.closest('.alert-rule-item').dataset.ruleId;
+            setStore('alert_rules', getStore('alert_rules', []).filter(r => r.id !== ruleId));
+            renderAlertRules();
+        });
+    });
+}
+
+// --- Notification Dispatch ---
+
+function checkAlertRules(data) {
+    const rules = getStore('alert_rules', []);
+    if (rules.length === 0) return;
+
+    const browserEnabled = getStore('notif_browser', false);
+    const discordEnabled = getStore('notif_discord', false);
+    const webhookUrl = getStore('discord_webhook', '');
+
+    rules.forEach(rule => {
+        const cycleData = data[rule.cycle];
+        if (!cycleData) return;
+
+        const currentState = cycleData.state;
+        const expiry = new Date(cycleData.expiry).getTime();
+        const now = Date.now();
+        const msLeft = expiry - now;
+        const minsLeft = msLeft / 60000;
+
+        // Calculate when the NEXT state (the one we want) starts
+        // If the current state IS the desired state:
+        //   - leadMinutes=0: fire when state is active
+        //   - leadMinutes>0: doesn't apply (we're already in it)
+        // If the current state is NOT the desired state:
+        //   - The desired state starts when current expires
+        //   - Fire if minsLeft <= leadMinutes
+
+        const alertKey = `${rule.id}_${cycleData.id}`;
+
+        if (currentState === rule.state) {
+            // Desired state is active right now
+            if (rule.leadMinutes === 0 && !firedAlerts[alertKey]) {
+                firedAlerts[alertKey] = true;
+                fireAlert(rule, `${CYCLE_NAMES[rule.cycle]} is now ${capitalize(rule.state)}!`, browserEnabled, discordEnabled, webhookUrl);
+            }
+        } else {
+            // Desired state comes next (after current expires)
+            if (rule.leadMinutes > 0 && minsLeft <= rule.leadMinutes && minsLeft > 0 && !firedAlerts[alertKey]) {
+                firedAlerts[alertKey] = true;
+                const timeStr = Math.ceil(minsLeft);
+                fireAlert(rule, `${CYCLE_NAMES[rule.cycle]} will be ${capitalize(rule.state)} in ~${timeStr} min!`, browserEnabled, discordEnabled, webhookUrl);
+            } else if (rule.leadMinutes === 0) {
+                // Reset fired state so it fires when state actually changes
+                delete firedAlerts[alertKey];
+            }
+        }
+    });
+}
+
+function fireAlert(rule, message, browserEnabled, discordEnabled, webhookUrl) {
+    // Browser notification
+    if (rule.browser && browserEnabled && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification('Warframe Tracker', {
+            body: message,
+            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="%230a0e14" stroke="%2300e5ff" stroke-width="2"/><text x="20" y="26" text-anchor="middle" fill="%2300e5ff" font-size="18">W</text></svg>',
+            tag: rule.id,
+            requireInteraction: false
+        });
+    }
+
+    // Discord webhook
+    if (rule.discord && discordEnabled && webhookUrl) {
+        sendDiscordMessage(webhookUrl, message);
+    }
+}
+
+async function sendDiscordMessage(webhookUrl, message) {
+    try {
+        await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: 'Warframe Tracker',
+                avatar_url: 'https://i.imgur.com/AfFp7pu.png',
+                embeds: [{
+                    title: 'Warframe Cycle Alert',
+                    description: message,
+                    color: 58879, // #00e5ff as decimal
+                    timestamp: new Date().toISOString(),
+                    footer: { text: 'Warframe Tracker' }
+                }]
+            })
+        });
+    } catch (err) {
+        console.error('Discord webhook error:', err);
+    }
+}
+
+// Clean up old fired alerts periodically
+function cleanupFiredAlerts() {
+    // Simple approach: clear every 10 minutes
+    firedAlerts = {};
+}
+setInterval(cleanupFiredAlerts, 600000);
 
 function renderNews(news) {
     const body = document.querySelector('#ws-news .ws-card-body');

@@ -40,6 +40,9 @@
                     <i class="fas fa-fire"></i>
                     <span id="streakCount">0</span>
                 </div>
+                <button class="header-settings-btn" id="openNotifSettings" title="Notification Settings">
+                    <i class="fas fa-bell"></i>
+                </button>
             </div>
         </header>
 
@@ -440,6 +443,132 @@
             <div class="modal-footer">
                 <button class="btn btn-ghost" id="cancelEvent">Cancel</button>
                 <button class="btn btn-accent" id="saveEvent">Save Event</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Settings Modal -->
+    <div class="modal-overlay" id="notifModal">
+        <div class="modal" style="max-width:560px">
+            <div class="modal-header">
+                <h3><i class="fas fa-bell"></i> Notification Settings</h3>
+                <button class="modal-close" id="closeNotifModal"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <!-- Browser Notifications -->
+                <div class="notif-section">
+                    <div class="notif-section-header">
+                        <i class="fas fa-desktop" style="color:var(--accent)"></i>
+                        <span>Browser Notifications</span>
+                        <div class="notif-toggle-wrapper">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="browserNotifToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <p class="notif-hint" id="browserNotifStatus">Click toggle to enable</p>
+                </div>
+
+                <!-- Discord Webhook -->
+                <div class="notif-section">
+                    <div class="notif-section-header">
+                        <i class="fab fa-discord" style="color:#5865F2"></i>
+                        <span>Discord Webhook</span>
+                        <div class="notif-toggle-wrapper">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="discordNotifToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top:0.5rem; margin-bottom:0.5rem">
+                        <input type="text" id="discordWebhookUrl" placeholder="https://discord.com/api/webhooks/..." class="form-input" style="font-size:0.78rem">
+                    </div>
+                    <p class="notif-hint">Paste your Discord channel webhook URL. Messages will be sent there.</p>
+                    <button class="btn btn-ghost btn-sm" id="testDiscordBtn" style="margin-top:0.3rem">
+                        <i class="fab fa-discord"></i> Send Test Message
+                    </button>
+                </div>
+
+                <!-- Alert Rules -->
+                <div class="notif-section">
+                    <div class="notif-section-header">
+                        <i class="fas fa-clock" style="color:var(--gold)"></i>
+                        <span>Alert Rules</span>
+                        <button class="btn btn-accent btn-sm" id="addAlertRuleBtn" style="margin-left:auto">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                    <p class="notif-hint">Get notified before a cycle changes. Great for Eidolon hunts!</p>
+                    <div class="alert-rules-list" id="alertRulesList">
+                        <!-- Rules rendered by JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="closeNotifBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Alert Rule Modal -->
+    <div class="modal-overlay" id="alertRuleModal">
+        <div class="modal" style="max-width:420px">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus"></i> Add Alert Rule</h3>
+                <button class="modal-close" id="closeAlertRuleModal"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="ruleCycle">Cycle</label>
+                    <select id="ruleCycle" class="form-input">
+                        <option value="cetusCycle">Cetus (Plains of Eidolon)</option>
+                        <option value="earthCycle">Earth</option>
+                        <option value="vallisCycle">Orb Vallis</option>
+                        <option value="cambionCycle">Cambion Drift</option>
+                        <option value="zarimanCycle">Zariman</option>
+                        <option value="duviriCycle">Duviri</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="ruleState">Notify when state is</label>
+                    <select id="ruleState" class="form-input">
+                        <option value="night">Night</option>
+                        <option value="day">Day</option>
+                        <option value="warm">Warm</option>
+                        <option value="cold">Cold</option>
+                        <option value="fass">Fass</option>
+                        <option value="vome">Vome</option>
+                        <option value="corpus">Corpus</option>
+                        <option value="grineer">Grineer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="ruleLeadTime">Notify how early (minutes before)</label>
+                    <select id="ruleLeadTime" class="form-input">
+                        <option value="0">When it starts</option>
+                        <option value="5">5 minutes before</option>
+                        <option value="10">10 minutes before</option>
+                        <option value="15">15 minutes before</option>
+                        <option value="30">30 minutes before</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Send to</label>
+                    <div style="display:flex; gap:1rem; margin-top:0.3rem">
+                        <label class="notif-checkbox-label">
+                            <input type="checkbox" id="ruleSendBrowser" checked> Browser
+                        </label>
+                        <label class="notif-checkbox-label">
+                            <input type="checkbox" id="ruleSendDiscord"> Discord
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="cancelAlertRule">Cancel</button>
+                <button class="btn btn-accent" id="saveAlertRule">Save Rule</button>
             </div>
         </div>
     </div>
