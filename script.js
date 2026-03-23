@@ -2,281 +2,49 @@
 // WARFRAME TRACKER - Application Logic
 // ============================================
 
+const API_BASE = 'https://api.warframestat.us/pc';
+
 // --- Task Definitions ---
 
 const weeklyTasks = [
-    {
-        id: 'eda',
-        name: 'Elite Deep Archimedea',
-        desc: 'Weekly endgame challenge',
-        icon: 'fas fa-brain',
-        color: '#e040fb',
-        img: 'https://static.wikia.nocookie.net/warframe/images/4/4e/DeepArchimedea.png'
-    },
-    {
-        id: 'eta',
-        name: 'Elite Tactical Alert',
-        desc: 'Tactical alert mission',
-        icon: 'fas fa-crosshairs',
-        color: '#ff5252',
-        img: null
-    },
-    {
-        id: 'netracell',
-        name: 'Netracell',
-        desc: 'Weekly Netracell mission',
-        icon: 'fas fa-network-wired',
-        color: '#00e5ff',
-        img: null
-    },
-    {
-        id: 'archon_hunt',
-        name: 'Archon Hunt',
-        desc: 'Weekly Archon boss fight',
-        icon: 'fas fa-dragon',
-        color: '#ff6e40',
-        img: null
-    },
-    {
-        id: 'calendar',
-        name: 'Calendar Check',
-        desc: 'Claim weekly calendar reward',
-        icon: 'fas fa-calendar-alt',
-        color: '#ffd54f',
-        img: null
-    },
-    {
-        id: 'acrithis',
-        name: 'Check Acrithis',
-        desc: 'Browse weekly wares for goodies',
-        icon: 'fas fa-gem',
-        color: '#69f0ae',
-        img: null
-    },
-    {
-        id: 'iron_wake',
-        name: 'Iron Wake',
-        desc: 'Kuva & Riven deals',
-        icon: 'fas fa-skull',
-        color: '#ff5252',
-        img: null
-    },
-    {
-        id: 'teshin',
-        name: 'Check Teshin',
-        desc: 'Steel Path weekly offerings',
-        icon: 'fas fa-fist-raised',
-        color: '#ffd54f',
-        img: null
-    },
-    {
-        id: 'yonta',
-        name: 'Archimedian Yonta',
-        desc: 'Weekly Kuva offering',
-        icon: 'fas fa-flask',
-        color: '#e040fb',
-        img: null
-    },
-    {
-        id: 'descendia_steel',
-        name: 'Descendia (Steel Path)',
-        desc: 'Steel Path weekly bounty',
-        icon: 'fas fa-shield-alt',
-        color: '#ff6e40',
-        img: null
-    },
-    {
-        id: 'descendia_base',
-        name: 'Descendia (Base)',
-        desc: 'Normal weekly bounty',
-        icon: 'fas fa-shield',
-        color: '#00e5ff',
-        img: null
-    },
-    {
-        id: 'ayatan_weekly',
-        name: 'Ayatan Treasure',
-        desc: 'Weekly Ayatan sculpture hunt',
-        icon: 'fas fa-star',
-        color: '#ffd54f',
-        img: null
-    },
-    {
-        id: 'bird3_archon',
-        name: 'Bird 3 Archon Shard',
-        desc: 'Weekly Archon Shard from Bird 3',
-        icon: 'fas fa-feather',
-        color: '#69f0ae',
-        img: null
-    },
-    {
-        id: 'kahl',
-        name: 'Kahl Mission',
-        desc: 'Weekly Kahl-175 mission',
-        icon: 'fas fa-user-ninja',
-        color: '#ff6e40',
-        img: null
-    },
-    {
-        id: 'clem',
-        name: 'Clem Mission',
-        desc: 'Weekly Clem survival',
-        icon: 'fas fa-user-astronaut',
-        color: '#00e5ff',
-        img: null
-    }
+    { id: 'eda', name: 'Elite Deep Archimedea', desc: 'Weekly endgame challenge', icon: 'fas fa-brain', color: '#e040fb' },
+    { id: 'eta', name: 'Elite Tactical Alert', desc: 'Tactical alert mission', icon: 'fas fa-crosshairs', color: '#ff5252' },
+    { id: 'netracell', name: 'Netracell', desc: 'Weekly Netracell mission', icon: 'fas fa-network-wired', color: '#00e5ff' },
+    { id: 'archon_hunt', name: 'Archon Hunt', desc: 'Weekly Archon boss fight', icon: 'fas fa-dragon', color: '#ff6e40' },
+    { id: 'calendar', name: 'Calendar Check', desc: 'Claim weekly calendar reward', icon: 'fas fa-calendar-alt', color: '#ffd54f' },
+    { id: 'acrithis', name: 'Check Acrithis', desc: 'Browse weekly wares', icon: 'fas fa-gem', color: '#69f0ae' },
+    { id: 'iron_wake', name: 'Iron Wake', desc: 'Kuva & Riven deals', icon: 'fas fa-skull', color: '#ff5252' },
+    { id: 'teshin', name: 'Check Teshin', desc: 'Steel Path weekly offerings', icon: 'fas fa-fist-raised', color: '#ffd54f' },
+    { id: 'yonta', name: 'Archimedian Yonta', desc: 'Weekly Kuva offering', icon: 'fas fa-flask', color: '#e040fb' },
+    { id: 'descendia_steel', name: 'Descendia (Steel Path)', desc: 'Steel Path weekly bounty', icon: 'fas fa-shield-alt', color: '#ff6e40' },
+    { id: 'descendia_base', name: 'Descendia (Base)', desc: 'Normal weekly bounty', icon: 'fas fa-shield', color: '#00e5ff' },
+    { id: 'ayatan_weekly', name: 'Ayatan Treasure', desc: 'Weekly Ayatan sculpture hunt', icon: 'fas fa-star', color: '#ffd54f' },
+    { id: 'bird3_archon', name: 'Bird 3 Archon Shard', desc: 'Weekly Archon Shard', icon: 'fas fa-feather', color: '#69f0ae' },
+    { id: 'kahl', name: 'Kahl Mission', desc: 'Weekly Kahl-175 mission', icon: 'fas fa-user-ninja', color: '#ff6e40' },
+    { id: 'clem', name: 'Clem Mission', desc: 'Weekly Clem survival', icon: 'fas fa-user-astronaut', color: '#00e5ff' }
 ];
 
 const dailyTasks = [
-    {
-        id: 'sorties',
-        name: 'Sorties',
-        desc: '3-stage daily mission',
-        icon: 'fas fa-bomb',
-        color: '#ff5252',
-        img: null
-    },
-    {
-        id: 'personal_syndicates',
-        name: 'Syndicate Standing Cap',
-        desc: 'Max out personal syndicates',
-        icon: 'fas fa-handshake',
-        color: '#e040fb',
-        img: null
-    },
-    {
-        id: 'openworld_syndicates',
-        name: 'Open World Syndicates',
-        desc: 'Cap open-world standing',
-        icon: 'fas fa-globe',
-        color: '#69f0ae',
-        img: null
-    },
-    {
-        id: 'daily_focus',
-        name: 'Daily Focus Cap',
-        desc: 'Max out daily focus',
-        icon: 'fas fa-brain',
-        color: '#00e5ff',
-        img: null
-    },
-    {
-        id: 'alerts',
-        name: 'Check Alerts',
-        desc: 'Look for valuable alerts',
-        icon: 'fas fa-exclamation-triangle',
-        color: '#ffd54f',
-        img: null
-    },
-    {
-        id: 'invasions',
-        name: 'Check Invasions',
-        desc: 'Farm invasion rewards',
-        icon: 'fas fa-rocket',
-        color: '#ff6e40',
-        img: null
-    },
-    {
-        id: 'simaris',
-        name: 'Cephalon Simaris',
-        desc: 'Daily Simaris standing',
-        icon: 'fas fa-eye',
-        color: '#ffd54f',
-        img: null
-    },
-    {
-        id: 'claim_forma',
-        name: 'Claim / Build Forma',
-        desc: 'Keep Forma production going',
-        icon: 'fas fa-cube',
-        color: '#00e5ff',
-        img: null
-    },
-    {
-        id: 'foundry_blueprints',
-        name: 'Check Foundry',
-        desc: 'Catalyst/Reactor blueprints',
-        icon: 'fas fa-hammer',
-        color: '#e040fb',
-        img: null
-    },
-    {
-        id: 'marie_ware',
-        name: 'Marie Browse Ware',
-        desc: 'Check Maroo for deals',
-        icon: 'fas fa-shopping-cart',
-        color: '#69f0ae',
-        img: null
-    },
-    {
-        id: 'computer_jawns',
-        name: 'Computer Jawns',
-        desc: 'Talk to them jawns on the computer',
-        icon: 'fas fa-laptop',
-        color: '#ff5252',
-        img: null
-    },
-    {
-        id: 'steelpath_incursions',
-        name: 'Steel Path Incursions',
-        desc: 'Daily Steel Path alerts',
-        icon: 'fas fa-fire',
-        color: '#ff6e40',
-        img: null
-    }
+    { id: 'sorties', name: 'Sorties', desc: '3-stage daily mission', icon: 'fas fa-bomb', color: '#ff5252' },
+    { id: 'personal_syndicates', name: 'Syndicate Standing Cap', desc: 'Max out personal syndicates', icon: 'fas fa-handshake', color: '#e040fb' },
+    { id: 'openworld_syndicates', name: 'Open World Syndicates', desc: 'Cap open-world standing', icon: 'fas fa-globe', color: '#69f0ae' },
+    { id: 'daily_focus', name: 'Daily Focus Cap', desc: 'Max out daily focus', icon: 'fas fa-brain', color: '#00e5ff' },
+    { id: 'alerts', name: 'Check Alerts', desc: 'Look for valuable alerts', icon: 'fas fa-exclamation-triangle', color: '#ffd54f' },
+    { id: 'invasions', name: 'Check Invasions', desc: 'Farm invasion rewards', icon: 'fas fa-rocket', color: '#ff6e40' },
+    { id: 'simaris', name: 'Cephalon Simaris', desc: 'Daily Simaris standing', icon: 'fas fa-eye', color: '#ffd54f' },
+    { id: 'claim_forma', name: 'Claim / Build Forma', desc: 'Keep Forma production going', icon: 'fas fa-cube', color: '#00e5ff' },
+    { id: 'foundry_blueprints', name: 'Check Foundry', desc: 'Catalyst/Reactor blueprints', icon: 'fas fa-hammer', color: '#e040fb' },
+    { id: 'marie_ware', name: 'Marie Browse Ware', desc: 'Check Maroo for deals', icon: 'fas fa-shopping-cart', color: '#69f0ae' },
+    { id: 'computer_jawns', name: 'Computer Jawns', desc: 'Talk to them jawns', icon: 'fas fa-laptop', color: '#ff5252' },
+    { id: 'steelpath_incursions', name: 'Steel Path Incursions', desc: 'Daily Steel Path alerts', icon: 'fas fa-fire', color: '#ff6e40' }
 ];
 
 const boosterTypes = [
-    {
-        id: 'affinity',
-        name: 'Affinity Booster',
-        subtitle: '2x Affinity gains',
-        icon: 'fas fa-graduation-cap',
-        color: '#00e5ff',
-        bgColor: 'rgba(0, 229, 255, 0.08)',
-        borderColor: 'rgba(0, 229, 255, 0.2)',
-        placeholder: 'e.g. Level up new frames at Hydron\nMax out focus schools\nForma builds on weapons...'
-    },
-    {
-        id: 'credit',
-        name: 'Credit Booster',
-        subtitle: '2x Credit gains',
-        icon: 'fas fa-coins',
-        color: '#ffd54f',
-        bgColor: 'rgba(255, 213, 79, 0.08)',
-        borderColor: 'rgba(255, 213, 79, 0.2)',
-        placeholder: 'e.g. Run Index for millions\nDo high-level bounties\nSell prime junk...'
-    },
-    {
-        id: 'resource',
-        name: 'Resource Booster',
-        subtitle: '2x Resource drops',
-        icon: 'fas fa-cubes',
-        color: '#69f0ae',
-        bgColor: 'rgba(105, 240, 174, 0.08)',
-        borderColor: 'rgba(105, 240, 174, 0.2)',
-        placeholder: 'e.g. Farm Kuva Survival\nStock up on Argon Crystals\nFarm Tellurium on Uranus...'
-    },
-    {
-        id: 'mod_drop',
-        name: 'Mod Drop Chance Booster',
-        subtitle: '2x Mod drop chance',
-        icon: 'fas fa-puzzle-piece',
-        color: '#e040fb',
-        bgColor: 'rgba(224, 64, 251, 0.08)',
-        borderColor: 'rgba(224, 64, 251, 0.2)',
-        placeholder: 'e.g. Farm Condition Overload at Deimos\nFarm rare Acolyte mods\nGet Galvanized mods from Arbitrations...'
-    },
-    {
-        id: 'resource_drop',
-        name: 'Resource Drop Chance Booster',
-        subtitle: '2x Resource drop chance',
-        icon: 'fas fa-diamond',
-        color: '#ff6e40',
-        bgColor: 'rgba(255, 110, 64, 0.08)',
-        borderColor: 'rgba(255, 110, 64, 0.2)',
-        placeholder: 'e.g. Farm Neurodes on Earth\nGet Orokin Cells at Ceres\nStock up on Neural Sensors...'
-    }
+    { id: 'affinity', name: 'Affinity Booster', subtitle: '2x Affinity gains', icon: 'fas fa-graduation-cap', color: '#00e5ff', bgColor: 'rgba(0, 229, 255, 0.08)', borderColor: 'rgba(0, 229, 255, 0.2)', placeholder: 'e.g. Level up new frames at Hydron\nMax out focus schools\nForma builds on weapons...' },
+    { id: 'credit', name: 'Credit Booster', subtitle: '2x Credit gains', icon: 'fas fa-coins', color: '#ffd54f', bgColor: 'rgba(255, 213, 79, 0.08)', borderColor: 'rgba(255, 213, 79, 0.2)', placeholder: 'e.g. Run Index for millions\nDo high-level bounties\nSell prime junk...' },
+    { id: 'resource', name: 'Resource Booster', subtitle: '2x Resource drops', icon: 'fas fa-cubes', color: '#69f0ae', bgColor: 'rgba(105, 240, 174, 0.08)', borderColor: 'rgba(105, 240, 174, 0.2)', placeholder: 'e.g. Farm Kuva Survival\nStock up on Argon Crystals\nFarm Tellurium on Uranus...' },
+    { id: 'mod_drop', name: 'Mod Drop Chance Booster', subtitle: '2x Mod drop chance', icon: 'fas fa-puzzle-piece', color: '#e040fb', bgColor: 'rgba(224, 64, 251, 0.08)', borderColor: 'rgba(224, 64, 251, 0.2)', placeholder: 'e.g. Farm Condition Overload at Deimos\nFarm rare Acolyte mods...' },
+    { id: 'resource_drop', name: 'Resource Drop Chance Booster', subtitle: '2x Resource drop chance', icon: 'fas fa-diamond', color: '#ff6e40', bgColor: 'rgba(255, 110, 64, 0.08)', borderColor: 'rgba(255, 110, 64, 0.2)', placeholder: 'e.g. Farm Neurodes on Earth\nGet Orokin Cells at Ceres...' }
 ];
 
 // --- State Management ---
@@ -287,9 +55,7 @@ function getStore(key, fallback) {
     try {
         const raw = localStorage.getItem(STORAGE_PREFIX + key);
         return raw ? JSON.parse(raw) : fallback;
-    } catch {
-        return fallback;
-    }
+    } catch { return fallback; }
 }
 
 function setStore(key, value) {
@@ -301,7 +67,6 @@ function setStore(key, value) {
 function getWeekKey(date) {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
-    // Set to Monday of the week
     const day = d.getDay();
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     d.setDate(diff);
@@ -316,16 +81,55 @@ function formatWeekLabel(weekKey) {
     const d = new Date(weekKey + 'T00:00:00');
     const options = { month: 'short', day: 'numeric' };
     const start = d.toLocaleDateString('en-US', options);
-    const end = new Date(d.getTime() + 6 * 86400000);
-    const endStr = end.toLocaleDateString('en-US', options);
-    return `${start} - ${endStr}`;
+    const end = new Date(d.getTime() + 6 * 86400000).toLocaleDateString('en-US', options);
+    return `${start} - ${end}`;
 }
 
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
-// --- Initialization ---
+function timeUntil(expiryStr) {
+    const now = Date.now();
+    const expiry = new Date(expiryStr).getTime();
+    const diff = expiry - now;
+    if (diff <= 0) return 'Expired';
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    if (h > 24) {
+        const d = Math.floor(h / 24);
+        return `${d}d ${h % 24}h`;
+    }
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+}
+
+function relativeDate(dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    const now = new Date();
+    const diffMs = now - d;
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+
+let worldStateData = null;
+let fissureFilterValue = 'all';
 
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
@@ -345,38 +149,34 @@ function initApp() {
     setupNavigation();
     setupResetButtons();
     setupEventModal();
+    setupWorldState();
+    setupNotifications();
+    fetchWorldState();
 }
 
 // --- Week Indicator ---
 
 function updateWeekIndicator() {
-    const now = new Date();
-    const weekKey = getWeekKey(now);
-    const label = formatWeekLabel(weekKey);
-    document.getElementById('currentWeek').textContent = label;
+    const weekKey = getWeekKey(new Date());
+    document.getElementById('currentWeek').textContent = formatWeekLabel(weekKey);
 }
 
-// --- Auto-Reset Logic ---
+// --- Auto-Reset ---
 
 function checkAutoResets() {
     const now = new Date();
     const today = getDayKey(now);
     const currentWeek = getWeekKey(now);
 
-    // Daily auto-reset
     const lastDailyReset = getStore('lastDailyReset', null);
     if (lastDailyReset !== today) {
         resetTaskStates('daily');
         setStore('lastDailyReset', today);
     }
 
-    // Weekly auto-reset: archive and reset
     const lastWeeklyReset = getStore('lastWeeklyReset', null);
     if (lastWeeklyReset !== currentWeek) {
-        // Archive previous week if there's data
-        if (lastWeeklyReset) {
-            archiveWeek(lastWeeklyReset);
-        }
+        if (lastWeeklyReset) archiveWeek(lastWeeklyReset);
         resetTaskStates('weekly');
         setStore('lastWeeklyReset', currentWeek);
     }
@@ -384,28 +184,20 @@ function checkAutoResets() {
 
 function archiveWeek(weekKey) {
     const states = getStore('tasks_weekly', {});
-    // Only archive if there's at least one completed task
     const hasCompleted = weeklyTasks.some(t => states[t.id] === true);
     if (!hasCompleted) return;
 
     const history = getStore('history', []);
-    // Don't duplicate
     if (history.find(h => h.weekKey === weekKey)) return;
 
-    const entry = {
-        weekKey: weekKey,
+    history.unshift({
+        weekKey,
         label: formatWeekLabel(weekKey),
-        tasks: weeklyTasks.map(t => ({
-            id: t.id,
-            name: t.name,
-            completed: states[t.id] === true
-        })),
+        tasks: weeklyTasks.map(t => ({ id: t.id, name: t.name, completed: states[t.id] === true })),
         completedCount: weeklyTasks.filter(t => states[t.id] === true).length,
         totalCount: weeklyTasks.length
-    };
+    });
 
-    history.unshift(entry);
-    // Keep last 52 weeks
     if (history.length > 52) history.pop();
     setStore('history', history);
 }
@@ -416,22 +208,14 @@ function renderWeeklyTasks() {
     const container = document.getElementById('weeklyTasks');
     container.innerHTML = '';
     const states = getStore('tasks_weekly', {});
-
-    weeklyTasks.forEach(task => {
-        const card = createTaskCard(task, 'weekly', states[task.id] === true);
-        container.appendChild(card);
-    });
+    weeklyTasks.forEach(task => container.appendChild(createTaskCard(task, 'weekly', states[task.id] === true)));
 }
 
 function renderDailyTasks() {
     const container = document.getElementById('dailyTasks');
     container.innerHTML = '';
     const states = getStore('tasks_daily', {});
-
-    dailyTasks.forEach(task => {
-        const card = createTaskCard(task, 'daily', states[task.id] === true);
-        container.appendChild(card);
-    });
+    dailyTasks.forEach(task => container.appendChild(createTaskCard(task, 'daily', states[task.id] === true)));
 }
 
 function createTaskCard(task, type, isCompleted) {
@@ -440,16 +224,10 @@ function createTaskCard(task, type, isCompleted) {
     card.dataset.taskId = task.id;
     card.dataset.type = type;
 
-    const iconBg = task.color + '18'; // ~10% opacity hex
-    const iconBorder = task.color + '30';
-
     card.innerHTML = `
         <div class="task-check"></div>
-        <div class="task-icon-wrapper" style="background:${iconBg}; border: 1px solid ${iconBorder}; color:${task.color}">
-            ${task.img
-                ? `<img src="${task.img}" alt="${task.name}" onerror="this.parentElement.innerHTML='<i class=\\'${task.icon}\\'></i>'">`
-                : `<i class="${task.icon}"></i>`
-            }
+        <div class="task-icon-wrapper" style="background:${task.color}18; border: 1px solid ${task.color}30; color:${task.color}">
+            <i class="${task.icon}"></i>
         </div>
         <div class="task-info">
             <div class="task-name">${task.name}</div>
@@ -463,17 +241,11 @@ function createTaskCard(task, type, isCompleted) {
 
 function toggleTask(card, type, taskId) {
     const states = getStore(`tasks_${type}`, {});
-    const newState = !states[taskId];
-    states[taskId] = newState;
+    states[taskId] = !states[taskId];
     setStore(`tasks_${type}`, states);
-
-    card.classList.toggle('completed', newState);
+    card.classList.toggle('completed', states[taskId]);
     updateProgress(type);
-
-    // Auto-archive on weekly completion
-    if (type === 'weekly') {
-        updateStreak();
-    }
+    if (type === 'weekly') updateStreak();
 }
 
 // --- Progress ---
@@ -482,16 +254,13 @@ function updateProgress(type) {
     const tasks = type === 'weekly' ? weeklyTasks : dailyTasks;
     const states = getStore(`tasks_${type}`, {});
     const done = tasks.filter(t => states[t.id] === true).length;
-    const total = tasks.length;
-    const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+    const pct = tasks.length === 0 ? 0 : Math.round((done / tasks.length) * 100);
 
-    // Update ring
     const ring = document.getElementById(`${type}ProgressRing`);
     const text = document.getElementById(`${type}ProgressText`);
     if (ring && text) {
-        const circumference = 2 * Math.PI * 20; // r=20
-        const offset = circumference - (pct / 100) * circumference;
-        ring.style.strokeDashoffset = offset;
+        const circumference = 2 * Math.PI * 20;
+        ring.style.strokeDashoffset = circumference - (pct / 100) * circumference;
         text.textContent = `${pct}%`;
     }
 }
@@ -501,38 +270,23 @@ function updateProgress(type) {
 function updateStreak() {
     const history = getStore('history', []);
     let streak = 0;
-
-    // Check current week too
-    const currentWeek = getWeekKey(new Date());
     const currentStates = getStore('tasks_weekly', {});
-    const currentDone = weeklyTasks.filter(t => currentStates[t.id] === true).length;
-    if (currentDone === weeklyTasks.length) streak++;
-
-    // Check history
+    if (weeklyTasks.every(t => currentStates[t.id] === true)) streak++;
     for (const entry of history) {
-        if (entry.completedCount === entry.totalCount) {
-            streak++;
-        } else {
-            break;
-        }
+        if (entry.completedCount === entry.totalCount) streak++;
+        else break;
     }
-
     document.getElementById('streakCount').textContent = streak;
-    const badge = document.getElementById('streakBadge');
-    badge.style.display = streak > 0 ? 'flex' : 'flex'; // always show
 }
 
 // --- Reset ---
 
-function resetTaskStates(type) {
-    setStore(`tasks_${type}`, {});
-}
+function resetTaskStates(type) { setStore(`tasks_${type}`, {}); }
 
 function setupResetButtons() {
     document.getElementById('resetWeekly').addEventListener('click', () => {
         if (!confirm('Reset all weekly tasks? This will archive your current progress.')) return;
-        const weekKey = getWeekKey(new Date());
-        archiveWeek(weekKey);
+        archiveWeek(getWeekKey(new Date()));
         resetTaskStates('weekly');
         renderWeeklyTasks();
         updateProgress('weekly');
@@ -562,13 +316,10 @@ function setupNavigation() {
 
     navBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            const tab = btn.dataset.tab;
-
             navBtns.forEach(b => b.classList.remove('active'));
             panels.forEach(p => p.classList.remove('active'));
-
             btn.classList.add('active');
-            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
         });
     });
 }
@@ -580,47 +331,30 @@ function renderHistory() {
     const emptyEl = document.getElementById('historyEmpty');
     const history = getStore('history', []);
 
-    // Remove old week cards (keep empty state)
     container.querySelectorAll('.history-week').forEach(el => el.remove());
 
-    if (history.length === 0) {
-        emptyEl.style.display = 'block';
-        return;
-    }
-
+    if (history.length === 0) { emptyEl.style.display = 'block'; return; }
     emptyEl.style.display = 'none';
 
-    history.forEach((entry, idx) => {
+    history.forEach(entry => {
         const pct = Math.round((entry.completedCount / entry.totalCount) * 100);
-        const weekEl = document.createElement('div');
-        weekEl.className = 'history-week';
-
-        weekEl.innerHTML = `
+        const el = document.createElement('div');
+        el.className = 'history-week';
+        el.innerHTML = `
             <div class="history-week-header">
                 <span class="history-week-title">${entry.label}</span>
                 <div class="history-week-stats">
                     <span class="history-stat"><strong>${entry.completedCount}</strong>/${entry.totalCount}</span>
-                    <div class="history-progress-bar">
-                        <div class="history-progress-fill" style="width:${pct}%"></div>
-                    </div>
+                    <div class="history-progress-bar"><div class="history-progress-fill" style="width:${pct}%"></div></div>
                     <i class="fas fa-chevron-down history-chevron"></i>
                 </div>
             </div>
             <div class="history-week-body">
-                ${entry.tasks.map(t => `
-                    <div class="history-task ${t.completed ? 'done' : 'missed'}">
-                        <i class="fas ${t.completed ? 'fa-check' : 'fa-xmark'}"></i>
-                        <span>${t.name}</span>
-                    </div>
-                `).join('')}
+                ${entry.tasks.map(t => `<div class="history-task ${t.completed ? 'done' : 'missed'}"><i class="fas ${t.completed ? 'fa-check' : 'fa-xmark'}"></i><span>${t.name}</span></div>`).join('')}
             </div>
         `;
-
-        weekEl.querySelector('.history-week-header').addEventListener('click', () => {
-            weekEl.classList.toggle('expanded');
-        });
-
-        container.appendChild(weekEl);
+        el.querySelector('.history-week-header').addEventListener('click', () => el.classList.toggle('expanded'));
+        container.appendChild(el);
     });
 }
 
@@ -634,7 +368,6 @@ function renderBoosters() {
     boosterTypes.forEach(booster => {
         const card = document.createElement('div');
         card.className = 'booster-card';
-
         card.innerHTML = `
             <div class="booster-card-header">
                 <div class="booster-icon" style="background:${booster.bgColor}; border: 1px solid ${booster.borderColor}; color:${booster.color}">
@@ -647,21 +380,14 @@ function renderBoosters() {
             </div>
             <div class="booster-card-body">
                 <div class="booster-notes-label">When I get this booster, I should:</div>
-                <textarea
-                    class="booster-notes"
-                    data-booster-id="${booster.id}"
-                    placeholder="${booster.placeholder}"
-                >${notes[booster.id] || ''}</textarea>
+                <textarea class="booster-notes" data-booster-id="${booster.id}" placeholder="${booster.placeholder}">${notes[booster.id] || ''}</textarea>
             </div>
         `;
-
-        const textarea = card.querySelector('.booster-notes');
-        textarea.addEventListener('input', () => {
+        card.querySelector('.booster-notes').addEventListener('input', function () {
             const allNotes = getStore('booster_notes', {});
-            allNotes[booster.id] = textarea.value;
+            allNotes[booster.id] = this.value;
             setStore('booster_notes', allNotes);
         });
-
         container.appendChild(card);
     });
 }
@@ -675,18 +401,13 @@ function renderEvents() {
 
     container.querySelectorAll('.event-card').forEach(el => el.remove());
 
-    if (events.length === 0) {
-        emptyEl.style.display = 'block';
-        return;
-    }
-
+    if (events.length === 0) { emptyEl.style.display = 'block'; return; }
     emptyEl.style.display = 'none';
 
     events.forEach(evt => {
         const completedCount = evt.tasks.filter(t => t.completed).length;
         const card = document.createElement('div');
         card.className = 'event-card';
-
         card.innerHTML = `
             <div class="event-card-header">
                 <div class="event-card-header-left">
@@ -694,41 +415,29 @@ function renderEvents() {
                         <i class="${evt.icon}"></i>
                     </div>
                     <div>
-                        <div class="event-title" style="color:${evt.color}">${evt.name}</div>
+                        <div class="event-title" style="color:${evt.color}">${escapeHtml(evt.name)}</div>
                         <div class="event-progress-text">${completedCount}/${evt.tasks.length} completed</div>
                     </div>
                 </div>
                 <div class="event-card-actions">
-                    <button title="Delete event" data-event-id="${evt.id}" class="delete-event-btn">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <button title="Delete event" data-event-id="${evt.id}" class="delete-event-btn"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
             <div class="event-card-body">
                 ${evt.tasks.map((t, i) => `
                     <div class="event-task ${t.completed ? 'completed' : ''}" data-event-id="${evt.id}" data-task-index="${i}">
                         <div class="event-task-check"></div>
-                        <span class="event-task-name">${t.name}</span>
+                        <span class="event-task-name">${escapeHtml(t.name)}</span>
                     </div>
                 `).join('')}
             </div>
         `;
-
-        // Toggle event tasks
         card.querySelectorAll('.event-task').forEach(taskEl => {
-            taskEl.addEventListener('click', () => {
-                const eventId = taskEl.dataset.eventId;
-                const taskIndex = parseInt(taskEl.dataset.taskIndex);
-                toggleEventTask(eventId, taskIndex);
-            });
+            taskEl.addEventListener('click', () => toggleEventTask(taskEl.dataset.eventId, parseInt(taskEl.dataset.taskIndex)));
         });
-
-        // Delete event
         card.querySelector('.delete-event-btn').addEventListener('click', () => {
-            if (!confirm(`Delete "${evt.name}"? This cannot be undone.`)) return;
-            deleteEvent(evt.id);
+            if (confirm(`Delete "${evt.name}"?`)) deleteEvent(evt.id);
         });
-
         container.appendChild(card);
     });
 }
@@ -737,33 +446,15 @@ function toggleEventTask(eventId, taskIndex) {
     const events = getStore('events', []);
     const evt = events.find(e => e.id === eventId);
     if (!evt || !evt.tasks[taskIndex]) return;
-
     evt.tasks[taskIndex].completed = !evt.tasks[taskIndex].completed;
     setStore('events', events);
     renderEvents();
 }
 
 function deleteEvent(eventId) {
-    let events = getStore('events', []);
-    events = events.filter(e => e.id !== eventId);
-    setStore('events', events);
+    setStore('events', getStore('events', []).filter(e => e.id !== eventId));
     renderEvents();
 }
-
-function addEvent(name, icon, color, taskNames) {
-    const events = getStore('events', []);
-    events.push({
-        id: generateId(),
-        name: name,
-        icon: icon,
-        color: color,
-        tasks: taskNames.map(n => ({ name: n.trim(), completed: false }))
-    });
-    setStore('events', events);
-    renderEvents();
-}
-
-// --- Event Modal ---
 
 function setupEventModal() {
     const modal = document.getElementById('eventModal');
@@ -772,7 +463,6 @@ function setupEventModal() {
     const cancelBtn = document.getElementById('cancelEvent');
     const saveBtn = document.getElementById('saveEvent');
     const colorPicker = document.getElementById('eventColorPicker');
-
     let selectedColor = '#00e5ff';
 
     openBtn.addEventListener('click', () => {
@@ -780,7 +470,6 @@ function setupEventModal() {
         document.getElementById('eventName').value = '';
         document.getElementById('eventTasks').value = '';
         document.getElementById('eventIcon').selectedIndex = 0;
-        // Reset color selection
         colorPicker.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
         colorPicker.querySelector('[data-color="#00e5ff"]').classList.add('active');
         selectedColor = '#00e5ff';
@@ -789,11 +478,8 @@ function setupEventModal() {
     const closeModal = () => modal.classList.remove('open');
     closeBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-    });
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-    // Color picker
     colorPicker.querySelectorAll('.color-swatch').forEach(swatch => {
         swatch.addEventListener('click', () => {
             colorPicker.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
@@ -806,13 +492,859 @@ function setupEventModal() {
         const name = document.getElementById('eventName').value.trim();
         const icon = document.getElementById('eventIcon').value;
         const tasksRaw = document.getElementById('eventTasks').value.trim();
-
         if (!name) { alert('Please enter an event name.'); return; }
-
         const taskNames = tasksRaw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         if (taskNames.length === 0) { alert('Please add at least one task.'); return; }
 
-        addEvent(name, icon, selectedColor, taskNames);
+        const events = getStore('events', []);
+        events.push({ id: generateId(), name, icon, color: selectedColor, tasks: taskNames.map(n => ({ name: n, completed: false })) });
+        setStore('events', events);
+        renderEvents();
         closeModal();
     });
+}
+
+// ============================================
+// WORLD STATE - API Integration
+// ============================================
+
+function setupWorldState() {
+    document.getElementById('refreshWorldState').addEventListener('click', () => fetchWorldState());
+
+    document.getElementById('fissureFilter').addEventListener('change', function () {
+        fissureFilterValue = this.value;
+        if (worldStateData) renderFissures(worldStateData.fissures);
+    });
+}
+
+async function fetchWorldState() {
+    try {
+        const res = await fetch(API_BASE, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        worldStateData = await res.json();
+        renderStatusBar(worldStateData);
+        renderWorldStateCards(worldStateData);
+        checkAlertRules(worldStateData);
+    } catch (err) {
+        console.error('Failed to fetch world state:', err);
+    }
+
+    // Refresh every 60s
+    setTimeout(fetchWorldState, 60000);
+}
+
+// ============================================
+// STATUS BAR - Live Cycles
+// ============================================
+
+function renderStatusBar(data) {
+    // Cetus
+    updateChip('chip-cetus', data.cetusCycle, {
+        stateClass: data.cetusCycle?.isDay ? 'state-day' : 'state-night',
+        icon: data.cetusCycle?.isDay ? 'fas fa-sun' : 'fas fa-moon',
+        value: `${capitalize(data.cetusCycle?.state)} ${data.cetusCycle?.timeLeft || ''}`
+    });
+
+    // Earth
+    updateChip('chip-earth', data.earthCycle, {
+        stateClass: data.earthCycle?.isDay ? 'state-day' : 'state-night',
+        icon: data.earthCycle?.isDay ? 'fas fa-sun' : 'fas fa-moon',
+        value: `${capitalize(data.earthCycle?.state)} ${data.earthCycle?.timeLeft || ''}`
+    });
+
+    // Vallis
+    updateChip('chip-vallis', data.vallisCycle, {
+        stateClass: data.vallisCycle?.isWarm ? 'state-warm' : 'state-cold',
+        icon: data.vallisCycle?.isWarm ? 'fas fa-temperature-high' : 'fas fa-snowflake',
+        value: `${capitalize(data.vallisCycle?.state)} ${timeUntil(data.vallisCycle?.expiry)}`
+    });
+
+    // Cambion
+    updateChip('chip-cambion', data.cambionCycle, {
+        stateClass: `state-${data.cambionCycle?.state}`,
+        icon: data.cambionCycle?.state === 'fass' ? 'fas fa-sun' : 'fas fa-moon',
+        value: `${capitalize(data.cambionCycle?.state)} ${data.cambionCycle?.timeLeft || ''}`
+    });
+
+    // Zariman
+    updateChip('chip-zariman', data.zarimanCycle, {
+        stateClass: `state-${data.zarimanCycle?.state}`,
+        icon: data.zarimanCycle?.isCorpus ? 'fas fa-building' : 'fas fa-skull-crossbones',
+        value: `${capitalize(data.zarimanCycle?.state)} ${data.zarimanCycle?.timeLeft || ''}`
+    });
+
+    // Duviri
+    updateChip('chip-duviri', data.duviriCycle, {
+        stateClass: '',
+        icon: 'fas fa-masks-theater',
+        value: capitalize(data.duviriCycle?.state || '--')
+    });
+
+    // Baro
+    const baro = data.voidTrader;
+    if (baro) {
+        const now = Date.now();
+        const arrival = new Date(baro.activation).getTime();
+        const departure = new Date(baro.expiry).getTime();
+        const isHere = now >= arrival && now < departure;
+
+        const chipEl = document.getElementById('chip-baro');
+        chipEl.className = 'status-chip ' + (isHere ? 'chip-accent' : 'chip-accent');
+        chipEl.querySelector('i').className = 'fas fa-gem';
+        chipEl.querySelector('.chip-value').textContent = isHere
+            ? `HERE - ${baro.location || ''} (${timeUntil(baro.expiry)})`
+            : `In ${timeUntil(baro.activation)}`;
+        chipEl.classList.remove('loading');
+    }
+
+    // Construction
+    const cp = data.constructionProgress;
+    if (cp) {
+        const chipEl = document.getElementById('chip-construction');
+        const fomorian = parseFloat(cp.fomorianProgress) || 0;
+        const razorback = parseFloat(cp.razorbackProgress) || 0;
+        chipEl.querySelector('.chip-label').textContent = 'Build';
+        chipEl.querySelector('.chip-value').textContent = `F:${fomorian.toFixed(0)}% R:${razorback.toFixed(0)}%`;
+        chipEl.className = 'status-chip' + (fomorian > 80 || razorback > 80 ? ' chip-danger' : '');
+        chipEl.classList.remove('loading');
+    }
+}
+
+function updateChip(chipId, data, opts) {
+    const el = document.getElementById(chipId);
+    if (!el || !data) return;
+    el.className = 'status-chip ' + (opts.stateClass || '');
+    el.querySelector('i').className = opts.icon;
+    el.querySelector('.chip-value').textContent = opts.value;
+    el.classList.remove('loading');
+}
+
+function capitalize(str) {
+    if (!str) return '--';
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// ============================================
+// WORLD STATE CARDS - Full Detail
+// ============================================
+
+function renderWorldStateCards(data) {
+    renderSortie(data.sortie);
+    renderArchonHunt(data.archonHunt);
+    renderSteelPath(data.steelPath);
+    renderArbitration(data.arbitration);
+    renderVoidTrader(data.voidTrader);
+    renderDailyDeals(data.dailyDeals);
+    renderDuviriDetails(data.duviriCycle);
+    renderConstruction(data.constructionProgress);
+    renderNightwave(data.nightwave);
+    renderFissures(data.fissures);
+    renderInvasions(data.invasions);
+    renderActiveEvents(data.events);
+    renderNews(data.news);
+}
+
+// --- Sortie ---
+
+function renderSortie(sortie) {
+    const body = document.querySelector('#ws-sortie .ws-card-body');
+    if (!sortie || !sortie.variants || sortie.variants.length === 0) {
+        body.innerHTML = '<div class="ws-empty">No sortie data available</div>';
+        return;
+    }
+
+    body.innerHTML = `
+        <div class="ws-label">Expires ${timeUntil(sortie.expiry)}</div>
+        ${sortie.variants.map((v, i) => `
+            <div class="ws-row">
+                <div class="ws-row-left">
+                    <i class="fas fa-crosshairs" style="color:${['#69f0ae', '#ffd54f', '#ff5252'][i]}"></i>
+                    <span class="ws-row-text"><span class="ws-highlight">${v.missionType}</span> - ${v.modifier}</span>
+                </div>
+            </div>
+        `).join('')}
+    `;
+    body.classList.remove('ws-loading');
+}
+
+// --- Archon Hunt ---
+
+function renderArchonHunt(archon) {
+    const body = document.querySelector('#ws-archon .ws-card-body');
+    if (!archon) {
+        body.innerHTML = '<div class="ws-empty">No data</div>';
+        return;
+    }
+
+    const missions = archon.missions || archon.variants || [];
+    body.innerHTML = `
+        <div class="ws-label">Expires ${timeUntil(archon.expiry)}</div>
+        ${missions.map((m, i) => `
+            <div class="ws-row">
+                <div class="ws-row-left">
+                    <i class="fas fa-${i === missions.length - 1 ? 'dragon' : 'circle'}" style="color:${i === missions.length - 1 ? '#ff6e40' : '#8899aa'}; font-size:${i === missions.length - 1 ? '0.7rem' : '0.4rem'}"></i>
+                    <span class="ws-row-text"><span class="ws-highlight">${m.type || m.missionType || 'Unknown'}</span> - ${m.node || ''}</span>
+                </div>
+            </div>
+        `).join('')}
+    `;
+    body.classList.remove('ws-loading');
+}
+
+// --- Steel Path ---
+
+function renderSteelPath(sp) {
+    const body = document.querySelector('#ws-steelpath .ws-card-body');
+    if (!sp) {
+        body.innerHTML = '<div class="ws-empty">No data</div>';
+        return;
+    }
+
+    body.innerHTML = `
+        <div class="ws-label">Current Reward</div>
+        <div class="ws-row">
+            <div class="ws-row-left">
+                <i class="fas fa-trophy" style="color:#ffd54f"></i>
+                <span class="ws-highlight">${sp.currentReward?.name || 'Unknown'}</span>
+            </div>
+            <div class="ws-row-right ws-gold">${sp.currentReward?.cost || '?'} SE</div>
+        </div>
+        <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem">Rotates in ${sp.remaining || timeUntil(sp.expiry)}</div>
+    `;
+    body.classList.remove('ws-loading');
+}
+
+// --- Arbitration ---
+
+function renderArbitration(arb) {
+    const body = document.querySelector('#ws-arbitration .ws-card-body');
+    if (!arb || arb.type === 'Unknown') {
+        body.innerHTML = '<div class="ws-empty">No arbitration data</div>';
+        body.classList.remove('ws-loading');
+        return;
+    }
+
+    body.innerHTML = `
+        <div class="ws-row">
+            <div class="ws-row-left">
+                <i class="fas fa-crosshairs" style="color:#69f0ae"></i>
+                <span class="ws-row-text"><span class="ws-highlight">${arb.type}</span> - ${arb.node}</span>
+            </div>
+        </div>
+        <div class="ws-row">
+            <div class="ws-row-left">
+                <i class="fas fa-skull" style="color:#ff5252; font-size:0.6rem"></i>
+                <span class="ws-row-text">${arb.enemy} ${arb.archwing ? '(Archwing)' : ''}</span>
+            </div>
+            <div class="ws-row-right">${timeUntil(arb.expiry)}</div>
+        </div>
+    `;
+    body.classList.remove('ws-loading');
+}
+
+// --- Void Trader ---
+
+function renderVoidTrader(baro) {
+    const body = document.querySelector('#ws-baro .ws-card-body');
+    if (!baro) {
+        body.innerHTML = '<div class="ws-empty">No data</div>';
+        return;
+    }
+
+    const now = Date.now();
+    const arrival = new Date(baro.activation).getTime();
+    const departure = new Date(baro.expiry).getTime();
+    const isHere = now >= arrival && now < departure;
+
+    let html = '';
+    if (isHere) {
+        html += `<div class="ws-label" style="color:var(--purple)">Baro Ki'Teer is HERE</div>`;
+        html += `<div style="font-size:0.82rem; margin-bottom:0.3rem"><i class="fas fa-map-marker-alt" style="color:var(--purple)"></i> ${baro.location || 'Unknown relay'}</div>`;
+        html += `<div style="font-size:0.72rem; color:var(--text-muted)">Leaves in ${timeUntil(baro.expiry)}</div>`;
+        if (baro.inventory && baro.inventory.length > 0) {
+            html += '<div class="ws-divider"></div>';
+            html += baro.inventory.slice(0, 10).map(item => `
+                <div class="ws-row">
+                    <div class="ws-row-left">
+                        <i class="fas fa-caret-right" style="color:var(--purple); font-size:0.6rem"></i>
+                        <span class="ws-row-text">${item.item || item.name || 'Unknown'}</span>
+                    </div>
+                    <div class="ws-row-right ws-gold">${item.ducats || '?'}d / ${item.credits || '?'}cr</div>
+                </div>
+            `).join('');
+            if (baro.inventory.length > 10) {
+                html += `<div class="ws-empty">...and ${baro.inventory.length - 10} more items</div>`;
+            }
+        }
+    } else {
+        html += `<div class="ws-label">Baro Ki'Teer</div>`;
+        html += `<div class="ws-row">
+            <div class="ws-row-left">
+                <i class="fas fa-clock" style="color:var(--purple)"></i>
+                <span>Arrives in <span class="ws-purple">${timeUntil(baro.activation)}</span></span>
+            </div>
+        </div>`;
+        if (baro.location) {
+            html += `<div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.2rem"><i class="fas fa-map-marker-alt"></i> ${baro.location}</div>`;
+        }
+    }
+
+    body.innerHTML = html;
+    body.classList.remove('ws-loading');
+}
+
+// --- Daily Deals ---
+
+function renderDailyDeals(deals) {
+    const body = document.querySelector('#ws-deals .ws-card-body');
+    if (!deals || deals.length === 0) {
+        body.innerHTML = '<div class="ws-empty">No daily deals</div>';
+        body.classList.remove('ws-loading');
+        return;
+    }
+
+    body.innerHTML = deals.map(deal => `
+        <div class="ws-row">
+            <div class="ws-row-left">
+                <i class="fas fa-tag" style="color:#ffd54f"></i>
+                <span class="ws-row-text"><span class="ws-highlight">${deal.item}</span></span>
+            </div>
+            <div class="ws-row-right">
+                <span class="ws-success">-${deal.discount}%</span>
+                <span style="margin-left:0.3rem">${deal.salePrice}p</span>
+            </div>
+        </div>
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-bottom:0.3rem">${deal.sold}/${deal.total} sold - ${timeUntil(deal.expiry)} left</div>
+    `).join('');
+    body.classList.remove('ws-loading');
+}
+
+// --- Duviri ---
+
+function renderDuviriDetails(duviri) {
+    const body = document.querySelector('#ws-duviri .ws-card-body');
+    if (!duviri) {
+        body.innerHTML = '<div class="ws-empty">No data</div>';
+        return;
+    }
+
+    let html = `<div class="ws-label">Mood: <span class="ws-purple">${capitalize(duviri.state)}</span></div>`;
+
+    if (duviri.choices && duviri.choices.length > 0) {
+        duviri.choices.forEach(choice => {
+            html += `<div style="margin-top:0.4rem"><span style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em">${choice.category}</span></div>`;
+            html += `<div style="font-size:0.82rem; color:var(--text-primary)">${choice.choices.join(', ')}</div>`;
+        });
+    }
+
+    html += `<div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem">Changes in ${timeUntil(duviri.expiry)}</div>`;
+    body.innerHTML = html;
+    body.classList.remove('ws-loading');
+}
+
+// --- Construction Progress ---
+
+function renderConstruction(cp) {
+    const body = document.querySelector('#ws-construction .ws-card-body');
+    if (!cp) {
+        body.innerHTML = '<div class="ws-empty">No data</div>';
+        return;
+    }
+
+    const fomorian = parseFloat(cp.fomorianProgress) || 0;
+    const razorback = parseFloat(cp.razorbackProgress) || 0;
+
+    body.innerHTML = `
+        <div class="ws-row">
+            <div class="ws-row-left"><i class="fas fa-ship" style="color:#ff5252"></i><span class="ws-highlight">Fomorian</span></div>
+            <div class="ws-row-right ${fomorian > 80 ? 'ws-danger' : ''}">${fomorian.toFixed(1)}%</div>
+        </div>
+        <div class="ws-progress-bar"><div class="ws-progress-fill" style="width:${fomorian}%; background:linear-gradient(90deg, #ff5252, #ff8a80)"></div></div>
+        <div class="ws-row" style="margin-top:0.5rem">
+            <div class="ws-row-left"><i class="fas fa-robot" style="color:#00e5ff"></i><span class="ws-highlight">Razorback</span></div>
+            <div class="ws-row-right ${razorback > 80 ? 'ws-danger' : ''}">${razorback.toFixed(1)}%</div>
+        </div>
+        <div class="ws-progress-bar"><div class="ws-progress-fill" style="width:${razorback}%; background:linear-gradient(90deg, #00e5ff, #80deea)"></div></div>
+    `;
+    body.classList.remove('ws-loading');
+}
+
+// --- Nightwave ---
+
+function renderNightwave(nw) {
+    const body = document.querySelector('#ws-nightwave .ws-card-body');
+    if (!nw || !nw.activeChallenges || nw.activeChallenges.length === 0) {
+        body.innerHTML = '<div class="ws-empty">No active Nightwave challenges</div>';
+        body.classList.remove('ws-loading');
+        return;
+    }
+
+    const challenges = nw.activeChallenges.sort((a, b) => (b.reputation || 0) - (a.reputation || 0));
+
+    body.innerHTML = `
+        <div class="ws-label">Season ${nw.season || '?'} - ${challenges.length} active challenges</div>
+        ${challenges.map(c => `
+            <div class="ws-nw-challenge">
+                <div class="ws-nw-info">
+                    <div class="ws-nw-title">${c.title || c.desc || 'Challenge'}</div>
+                    <div class="ws-nw-desc">${c.desc || ''}</div>
+                </div>
+                <div class="ws-nw-rep">+${(c.reputation || 0).toLocaleString()}</div>
+            </div>
+        `).join('')}
+    `;
+    body.classList.remove('ws-loading');
+}
+
+// --- Fissures ---
+
+function renderFissures(fissures) {
+    const body = document.querySelector('#ws-fissures .ws-card-body');
+    if (!fissures || fissures.length === 0) {
+        body.innerHTML = '<div class="ws-empty">No active fissures</div>';
+        body.classList.remove('ws-loading');
+        return;
+    }
+
+    let filtered = fissures;
+    if (fissureFilterValue !== 'all') {
+        filtered = fissures.filter(f => f.tier === fissureFilterValue);
+    }
+
+    // Sort by tier
+    const tierOrder = { Lith: 1, Meso: 2, Neo: 3, Axi: 4, Requiem: 5, Omnia: 6 };
+    filtered.sort((a, b) => (tierOrder[a.tier] || 99) - (tierOrder[b.tier] || 99));
+
+    if (filtered.length === 0) {
+        body.innerHTML = `<div class="ws-empty">No ${fissureFilterValue} fissures active</div>`;
+        body.classList.remove('ws-loading');
+        return;
+    }
+
+    body.innerHTML = filtered.map(f => {
+        const tierClass = 'ws-tag-' + (f.tier || '').toLowerCase();
+        return `
+            <div class="ws-row">
+                <div class="ws-row-left">
+                    <span class="ws-tag ${tierClass}">${f.tier || '?'}</span>
+                    <span class="ws-row-text"><span class="ws-highlight">${f.missionType}</span> - ${f.node} (${f.enemy})</span>
+                </div>
+                <div class="ws-row-right">${timeUntil(f.expiry)}</div>
+            </div>
+        `;
+    }).join('');
+    body.classList.remove('ws-loading');
+}
+
+// --- Invasions ---
+
+function renderInvasions(invasions) {
+    const body = document.querySelector('#ws-invasions .ws-card-body');
+    if (!invasions || invasions.length === 0) {
+        body.innerHTML = '<div class="ws-empty">No active invasions</div>';
+        body.classList.remove('ws-loading');
+        return;
+    }
+
+    // Only show non-completed
+    const active = invasions.filter(inv => !inv.completed);
+    if (active.length === 0) {
+        body.innerHTML = '<div class="ws-empty">All invasions completed</div>';
+        body.classList.remove('ws-loading');
+        return;
+    }
+
+    body.innerHTML = active.map(inv => {
+        const attackerReward = getInvasionReward(inv.attacker);
+        const defenderReward = getInvasionReward(inv.defender);
+        const completion = inv.completion || 50;
+        const attackerPct = Math.max(0, Math.min(100, 50 + completion / 2));
+        const defenderPct = 100 - attackerPct;
+
+        return `
+            <div style="margin-bottom:0.6rem">
+                <div class="ws-row">
+                    <div class="ws-row-left">
+                        <span class="ws-row-text">
+                            <span class="ws-danger">${attackerReward}</span>
+                            vs
+                            <span class="ws-accent">${defenderReward}</span>
+                        </span>
+                    </div>
+                    <div class="ws-row-right">${inv.node}</div>
+                </div>
+                <div class="ws-invasion-bar">
+                    <div class="ws-invasion-attacker" style="width:${attackerPct}%"></div>
+                    <div class="ws-invasion-defender" style="width:${defenderPct}%"></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    body.classList.remove('ws-loading');
+}
+
+function getInvasionReward(side) {
+    if (!side || !side.reward) return 'Credits';
+    const items = side.reward.countedItems || [];
+    const directItems = side.reward.items || [];
+    if (items.length > 0) return items.map(i => `${i.count}x ${i.type}`).join(', ');
+    if (directItems.length > 0) return directItems.join(', ');
+    if (side.reward.credits > 0) return `${side.reward.credits.toLocaleString()} Credits`;
+    return 'Reward';
+}
+
+// --- Events ---
+
+function renderActiveEvents(events) {
+    const body = document.querySelector('#ws-events .ws-card-body');
+    if (!events || events.length === 0) {
+        body.innerHTML = '<div class="ws-empty">No active events</div>';
+        body.classList.remove('ws-loading');
+        return;
+    }
+
+    body.innerHTML = events.map(evt => `
+        <div class="ws-row">
+            <div class="ws-row-left">
+                <i class="fas fa-star" style="color:#69f0ae"></i>
+                <span class="ws-row-text">
+                    <span class="ws-highlight">${evt.description || evt.tooltip || 'Event'}</span>
+                    ${evt.tooltip && evt.tooltip !== evt.description ? ` - ${evt.tooltip}` : ''}
+                </span>
+            </div>
+            <div class="ws-row-right">${timeUntil(evt.expiry)}</div>
+        </div>
+        ${evt.currentScore !== undefined ? `
+            <div class="ws-progress-bar" style="margin-bottom:0.4rem">
+                <div class="ws-progress-fill" style="width:${Math.min(100, (evt.currentScore / (evt.maximumScore || 100)) * 100)}%; background:linear-gradient(90deg, #69f0ae, #00e5ff)"></div>
+            </div>
+        ` : ''}
+    `).join('');
+    body.classList.remove('ws-loading');
+}
+
+// --- News ---
+
+// ============================================
+// NOTIFICATIONS - Browser + Discord
+// ============================================
+
+const CYCLE_NAMES = {
+    cetusCycle: 'Cetus',
+    earthCycle: 'Earth',
+    vallisCycle: 'Orb Vallis',
+    cambionCycle: 'Cambion Drift',
+    zarimanCycle: 'Zariman',
+    duviriCycle: 'Duviri'
+};
+
+const CYCLE_STATES = {
+    cetusCycle: ['day', 'night'],
+    earthCycle: ['day', 'night'],
+    vallisCycle: ['warm', 'cold'],
+    cambionCycle: ['fass', 'vome'],
+    zarimanCycle: ['corpus', 'grineer'],
+    duviriCycle: ['joy', 'anger', 'envy', 'sorrow', 'fear']
+};
+
+// Track which alerts have already fired so we don't spam
+let firedAlerts = {};
+
+function setupNotifications() {
+    const notifModal = document.getElementById('notifModal');
+    const openBtn = document.getElementById('openNotifSettings');
+    const closeBtn = document.getElementById('closeNotifModal');
+    const closeBtn2 = document.getElementById('closeNotifBtn');
+
+    const browserToggle = document.getElementById('browserNotifToggle');
+    const discordToggle = document.getElementById('discordNotifToggle');
+    const webhookInput = document.getElementById('discordWebhookUrl');
+    const testBtn = document.getElementById('testDiscordBtn');
+
+    // Open/close modal
+    openBtn.addEventListener('click', () => { notifModal.classList.add('open'); refreshNotifUI(); });
+    const closeNotif = () => notifModal.classList.remove('open');
+    closeBtn.addEventListener('click', closeNotif);
+    closeBtn2.addEventListener('click', closeNotif);
+    notifModal.addEventListener('click', (e) => { if (e.target === notifModal) closeNotif(); });
+
+    // Browser notifications toggle
+    const browserEnabled = getStore('notif_browser', false);
+    browserToggle.checked = browserEnabled;
+    updateBrowserNotifStatus();
+
+    browserToggle.addEventListener('change', async () => {
+        if (browserToggle.checked) {
+            if ('Notification' in window) {
+                const perm = await Notification.requestPermission();
+                if (perm === 'granted') {
+                    setStore('notif_browser', true);
+                    updateBrowserNotifStatus();
+                } else {
+                    browserToggle.checked = false;
+                    setStore('notif_browser', false);
+                    updateBrowserNotifStatus();
+                }
+            } else {
+                browserToggle.checked = false;
+                alert('Your browser does not support notifications.');
+            }
+        } else {
+            setStore('notif_browser', false);
+            updateBrowserNotifStatus();
+        }
+    });
+
+    // Discord toggle + webhook
+    discordToggle.checked = getStore('notif_discord', false);
+    webhookInput.value = getStore('discord_webhook', '');
+
+    discordToggle.addEventListener('change', () => {
+        setStore('notif_discord', discordToggle.checked);
+    });
+
+    webhookInput.addEventListener('input', () => {
+        setStore('discord_webhook', webhookInput.value.trim());
+    });
+
+    // Test Discord
+    testBtn.addEventListener('click', () => {
+        const url = getStore('discord_webhook', '');
+        if (!url) { alert('Please enter a Discord webhook URL first.'); return; }
+        sendDiscordMessage(url, 'Warframe Tracker -- test notification. Your webhook is working!');
+    });
+
+    // Alert rules
+    setupAlertRuleModal();
+    renderAlertRules();
+}
+
+function updateBrowserNotifStatus() {
+    const el = document.getElementById('browserNotifStatus');
+    if (!('Notification' in window)) {
+        el.textContent = 'Not supported in this browser';
+        return;
+    }
+    const perm = Notification.permission;
+    const enabled = getStore('notif_browser', false);
+    if (enabled && perm === 'granted') {
+        el.textContent = 'Enabled -- notifications will appear on your desktop';
+        el.style.color = 'var(--success)';
+    } else if (perm === 'denied') {
+        el.textContent = 'Blocked by browser. Check your browser notification settings.';
+        el.style.color = 'var(--danger)';
+    } else {
+        el.textContent = 'Click toggle to enable';
+        el.style.color = '';
+    }
+}
+
+function refreshNotifUI() {
+    document.getElementById('browserNotifToggle').checked = getStore('notif_browser', false);
+    document.getElementById('discordNotifToggle').checked = getStore('notif_discord', false);
+    document.getElementById('discordWebhookUrl').value = getStore('discord_webhook', '');
+    updateBrowserNotifStatus();
+    renderAlertRules();
+}
+
+// --- Alert Rules ---
+
+function setupAlertRuleModal() {
+    const modal = document.getElementById('alertRuleModal');
+    const addBtn = document.getElementById('addAlertRuleBtn');
+    const closeBtn = document.getElementById('closeAlertRuleModal');
+    const cancelBtn = document.getElementById('cancelAlertRule');
+    const saveBtn = document.getElementById('saveAlertRule');
+    const cycleSelect = document.getElementById('ruleCycle');
+    const stateSelect = document.getElementById('ruleState');
+
+    // Update state options when cycle changes
+    cycleSelect.addEventListener('change', () => updateStateOptions(cycleSelect.value, stateSelect));
+
+    addBtn.addEventListener('click', () => {
+        modal.classList.add('open');
+        cycleSelect.selectedIndex = 0;
+        updateStateOptions(cycleSelect.value, stateSelect);
+        document.getElementById('ruleLeadTime').selectedIndex = 0;
+        document.getElementById('ruleSendBrowser').checked = true;
+        document.getElementById('ruleSendDiscord').checked = false;
+    });
+
+    const closeRule = () => modal.classList.remove('open');
+    closeBtn.addEventListener('click', closeRule);
+    cancelBtn.addEventListener('click', closeRule);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeRule(); });
+
+    saveBtn.addEventListener('click', () => {
+        const rules = getStore('alert_rules', []);
+        rules.push({
+            id: generateId(),
+            cycle: cycleSelect.value,
+            state: stateSelect.value,
+            leadMinutes: parseInt(document.getElementById('ruleLeadTime').value),
+            browser: document.getElementById('ruleSendBrowser').checked,
+            discord: document.getElementById('ruleSendDiscord').checked
+        });
+        setStore('alert_rules', rules);
+        renderAlertRules();
+        closeRule();
+    });
+}
+
+function updateStateOptions(cycleKey, selectEl) {
+    const states = CYCLE_STATES[cycleKey] || ['day', 'night'];
+    selectEl.innerHTML = states.map(s => `<option value="${s}">${capitalize(s)}</option>`).join('');
+}
+
+function renderAlertRules() {
+    const container = document.getElementById('alertRulesList');
+    const rules = getStore('alert_rules', []);
+
+    if (rules.length === 0) {
+        container.innerHTML = '<div class="alert-rules-empty">No alert rules yet. Add one to get notified!</div>';
+        return;
+    }
+
+    container.innerHTML = rules.map(rule => `
+        <div class="alert-rule-item" data-rule-id="${rule.id}">
+            <i class="fas fa-bell alert-rule-icon"></i>
+            <div class="alert-rule-text">
+                <strong>${CYCLE_NAMES[rule.cycle] || rule.cycle}</strong> &rarr; ${capitalize(rule.state)}
+                <div class="rule-detail">${rule.leadMinutes > 0 ? rule.leadMinutes + ' min before' : 'When it starts'}</div>
+            </div>
+            <div class="alert-rule-channels">
+                <i class="fas fa-desktop ${rule.browser ? 'active-channel' : ''}" title="Browser"></i>
+                <i class="fab fa-discord ${rule.discord ? 'active-discord' : ''}" title="Discord"></i>
+            </div>
+            <button class="alert-rule-delete" title="Delete rule"><i class="fas fa-trash"></i></button>
+        </div>
+    `).join('');
+
+    container.querySelectorAll('.alert-rule-delete').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const ruleId = btn.closest('.alert-rule-item').dataset.ruleId;
+            setStore('alert_rules', getStore('alert_rules', []).filter(r => r.id !== ruleId));
+            renderAlertRules();
+        });
+    });
+}
+
+// --- Notification Dispatch ---
+
+function checkAlertRules(data) {
+    const rules = getStore('alert_rules', []);
+    if (rules.length === 0) return;
+
+    const browserEnabled = getStore('notif_browser', false);
+    const discordEnabled = getStore('notif_discord', false);
+    const webhookUrl = getStore('discord_webhook', '');
+
+    rules.forEach(rule => {
+        const cycleData = data[rule.cycle];
+        if (!cycleData) return;
+
+        const currentState = cycleData.state;
+        const expiry = new Date(cycleData.expiry).getTime();
+        const now = Date.now();
+        const msLeft = expiry - now;
+        const minsLeft = msLeft / 60000;
+
+        // Calculate when the NEXT state (the one we want) starts
+        // If the current state IS the desired state:
+        //   - leadMinutes=0: fire when state is active
+        //   - leadMinutes>0: doesn't apply (we're already in it)
+        // If the current state is NOT the desired state:
+        //   - The desired state starts when current expires
+        //   - Fire if minsLeft <= leadMinutes
+
+        const alertKey = `${rule.id}_${cycleData.id}`;
+
+        if (currentState === rule.state) {
+            // Desired state is active right now
+            if (rule.leadMinutes === 0 && !firedAlerts[alertKey]) {
+                firedAlerts[alertKey] = true;
+                fireAlert(rule, `${CYCLE_NAMES[rule.cycle]} is now ${capitalize(rule.state)}!`, browserEnabled, discordEnabled, webhookUrl);
+            }
+        } else {
+            // Desired state comes next (after current expires)
+            if (rule.leadMinutes > 0 && minsLeft <= rule.leadMinutes && minsLeft > 0 && !firedAlerts[alertKey]) {
+                firedAlerts[alertKey] = true;
+                const timeStr = Math.ceil(minsLeft);
+                fireAlert(rule, `${CYCLE_NAMES[rule.cycle]} will be ${capitalize(rule.state)} in ~${timeStr} min!`, browserEnabled, discordEnabled, webhookUrl);
+            } else if (rule.leadMinutes === 0) {
+                // Reset fired state so it fires when state actually changes
+                delete firedAlerts[alertKey];
+            }
+        }
+    });
+}
+
+function fireAlert(rule, message, browserEnabled, discordEnabled, webhookUrl) {
+    // Browser notification
+    if (rule.browser && browserEnabled && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification('Warframe Tracker', {
+            body: message,
+            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="%230a0e14" stroke="%2300e5ff" stroke-width="2"/><text x="20" y="26" text-anchor="middle" fill="%2300e5ff" font-size="18">W</text></svg>',
+            tag: rule.id,
+            requireInteraction: false
+        });
+    }
+
+    // Discord webhook
+    if (rule.discord && discordEnabled && webhookUrl) {
+        sendDiscordMessage(webhookUrl, message);
+    }
+}
+
+async function sendDiscordMessage(webhookUrl, message) {
+    try {
+        await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: 'Warframe Tracker',
+                avatar_url: 'https://i.imgur.com/AfFp7pu.png',
+                embeds: [{
+                    title: 'Warframe Cycle Alert',
+                    description: message,
+                    color: 58879, // #00e5ff as decimal
+                    timestamp: new Date().toISOString(),
+                    footer: { text: 'Warframe Tracker' }
+                }]
+            })
+        });
+    } catch (err) {
+        console.error('Discord webhook error:', err);
+    }
+}
+
+// Clean up old fired alerts periodically
+function cleanupFiredAlerts() {
+    // Simple approach: clear every 10 minutes
+    firedAlerts = {};
+}
+setInterval(cleanupFiredAlerts, 600000);
+
+function renderNews(news) {
+    const body = document.querySelector('#ws-news .ws-card-body');
+    if (!news || news.length === 0) {
+        body.innerHTML = '<div class="ws-empty">No news</div>';
+        body.classList.remove('ws-loading');
+        return;
+    }
+
+    // Show latest 8 news items, skip broken dates
+    const sorted = [...news]
+        .filter(n => n.message && n.link)
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 8);
+
+    body.innerHTML = sorted.map(n => `
+        <a href="${n.link}" target="_blank" rel="noopener" class="ws-news-link">
+            <span class="ws-news-date">${relativeDate(n.date)}</span>
+            <span class="ws-news-text">${escapeHtml(n.message)}</span>
+            <i class="fas fa-external-link-alt" style="font-size:0.6rem; color:var(--text-muted); flex-shrink:0"></i>
+        </a>
+    `).join('');
+    body.classList.remove('ws-loading');
 }
