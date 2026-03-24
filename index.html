@@ -3,64 +3,590 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warframe Reminder</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        .task-checkbox:checked + label {
-            text-decoration: line-through;
-            opacity: 0.6;
-        }
-        .task-checkbox {
-            width: 1.25rem;
-            height: 1.25rem;
-        }
-    </style>
+    <title>Warframe Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-gray-900 text-white min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold mb-2 text-blue-400">
-                <i class="fas fa-gamepad mr-2"></i>Warframe Reminder
-            </h1>
-            <p class="text-gray-400">Track your daily and weekly tasks</p>
+<body>
+    <!-- Background Effects -->
+    <div class="bg-grid"></div>
+    <div class="bg-vignette"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 40 40" fill="none">
+                        <path d="M20 2L4 12v16l16 10 16-10V12L20 2z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                        <path d="M20 8l-10 6v12l10 6 10-6V14L20 8z" stroke="currentColor" stroke-width="1" fill="none" opacity="0.5"/>
+                        <circle cx="20" cy="20" r="4" fill="currentColor" opacity="0.8"/>
+                    </svg>
+                    <div>
+                        <h1 class="logo-text">WARFRAME</h1>
+                        <span class="logo-sub">MISSION TRACKER</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="week-indicator">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="currentWeek">Week of --</span>
+                </div>
+                <div class="streak-badge" id="streakBadge" title="Consecutive weeks completed">
+                    <i class="fas fa-fire"></i>
+                    <span id="streakCount">0</span>
+                </div>
+                <button class="header-settings-btn" id="openNotifSettings" title="Notification Settings">
+                    <i class="fas fa-bell"></i>
+                </button>
+            </div>
         </header>
 
-        <main class="space-y-8">
-            <!-- Weekly Tasks Section -->
-            <section class="bg-gray-800 rounded-lg p-6 shadow-lg">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-semibold text-purple-400">
-                        <i class="fas fa-calendar-week mr-2"></i>Weekly Tasks
-                    </h2>
-                    <button id="resetWeekly" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm transition-colors">
-                        <i class="fas fa-redo mr-1"></i>Reset Weekly
-                    </button>
+        <!-- ==================== LIVE STATUS BAR ==================== -->
+        <div class="status-bar" id="statusBar">
+            <div class="status-bar-inner" id="statusBarInner">
+                <div class="status-chip loading" id="chip-cetus">
+                    <i class="fas fa-sun"></i>
+                    <span class="chip-label">Cetus</span>
+                    <span class="chip-value">--</span>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="weeklyTasks">
-                    <!-- Weekly tasks will be populated by JavaScript -->
+                <div class="status-chip loading" id="chip-earth">
+                    <i class="fas fa-earth-americas"></i>
+                    <span class="chip-label">Earth</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip loading" id="chip-vallis">
+                    <i class="fas fa-snowflake"></i>
+                    <span class="chip-label">Vallis</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip loading" id="chip-cambion">
+                    <i class="fas fa-virus"></i>
+                    <span class="chip-label">Cambion</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip loading" id="chip-zariman">
+                    <i class="fas fa-tower-broadcast"></i>
+                    <span class="chip-label">Zariman</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip loading" id="chip-duviri">
+                    <i class="fas fa-masks-theater"></i>
+                    <span class="chip-label">Duviri</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip chip-arbi-current loading" id="chip-arbitration">
+                    <i class="fas fa-scale-balanced"></i>
+                    <span class="chip-label">Arbitration</span>
+                    <span class="chip-value">--</span>
+                    <span class="chip-tier-badge" id="chip-arbi-tier"></span>
+                </div>
+                <div class="status-chip chip-arbi-upcoming" id="chip-arbi-next-s" style="display:none">
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="chip-label">Next S-Tier</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip chip-arbi-upcoming" id="chip-arbi-next-a" style="display:none">
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="chip-label">Next A-Tier</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip chip-accent loading" id="chip-baro">
+                    <i class="fas fa-gem"></i>
+                    <span class="chip-label">Baro</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip loading" id="chip-construction">
+                    <i class="fas fa-industry"></i>
+                    <span class="chip-label">Fomorian</span>
+                    <span class="chip-value">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <button class="nav-btn active" data-tab="weekly">
+                <i class="fas fa-calendar-week"></i>
+                <span>Weekly</span>
+            </button>
+            <button class="nav-btn" data-tab="daily">
+                <i class="fas fa-sun"></i>
+                <span>Daily</span>
+            </button>
+            <button class="nav-btn" data-tab="worldstate">
+                <i class="fas fa-globe"></i>
+                <span>World State</span>
+            </button>
+            <button class="nav-btn" data-tab="history">
+                <i class="fas fa-clock-rotate-left"></i>
+                <span>History</span>
+            </button>
+            <button class="nav-btn" data-tab="boosters">
+                <i class="fas fa-bolt"></i>
+                <span>Boosters</span>
+            </button>
+            <button class="nav-btn" data-tab="events">
+                <i class="fas fa-star"></i>
+                <span>Events</span>
+            </button>
+        </nav>
+
+        <!-- Tab Content -->
+        <main class="tab-content">
+
+            <!-- ==================== WEEKLY TASKS ==================== -->
+            <section class="tab-panel active" id="tab-weekly">
+                <div class="panel-header">
+                    <div>
+                        <h2>Weekly Missions</h2>
+                        <p class="panel-subtitle">Reset every Monday</p>
+                    </div>
+                    <div class="panel-actions">
+                        <div class="progress-ring-container">
+                            <svg class="progress-ring" viewBox="0 0 48 48">
+                                <circle class="progress-ring-bg" cx="24" cy="24" r="20"/>
+                                <circle class="progress-ring-fill" id="weeklyProgressRing" cx="24" cy="24" r="20"/>
+                            </svg>
+                            <span class="progress-ring-text" id="weeklyProgressText">0%</span>
+                        </div>
+                        <button class="btn btn-danger btn-sm" id="resetWeekly">
+                            <i class="fas fa-rotate-right"></i> Reset
+                        </button>
+                    </div>
+                </div>
+                <div class="tasks-grid" id="weeklyTasks"></div>
+            </section>
+
+            <!-- ==================== DAILY TASKS ==================== -->
+            <section class="tab-panel" id="tab-daily">
+                <div class="panel-header">
+                    <div>
+                        <h2>Daily Missions</h2>
+                        <p class="panel-subtitle">Auto-resets at midnight</p>
+                    </div>
+                    <div class="panel-actions">
+                        <div class="progress-ring-container">
+                            <svg class="progress-ring" viewBox="0 0 48 48">
+                                <circle class="progress-ring-bg" cx="24" cy="24" r="20"/>
+                                <circle class="progress-ring-fill" id="dailyProgressRing" cx="24" cy="24" r="20"/>
+                            </svg>
+                            <span class="progress-ring-text" id="dailyProgressText">0%</span>
+                        </div>
+                        <button class="btn btn-danger btn-sm" id="resetDaily">
+                            <i class="fas fa-rotate-right"></i> Reset
+                        </button>
+                    </div>
+                </div>
+                <div class="tasks-grid" id="dailyTasks"></div>
+            </section>
+
+            <!-- ==================== WORLD STATE ==================== -->
+            <section class="tab-panel" id="tab-worldstate">
+                <div class="panel-header">
+                    <div>
+                        <h2>World State</h2>
+                        <p class="panel-subtitle">Live data from Warframe servers</p>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-accent btn-sm" id="refreshWorldState">
+                            <i class="fas fa-rotate"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="ws-grid" id="worldStateGrid">
+                    <!-- Sortie -->
+                    <div class="ws-card" id="ws-sortie">
+                        <div class="ws-card-header">
+                            <i class="fas fa-bomb" style="color:#ff5252"></i>
+                            <h3>Sortie</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Archon Hunt -->
+                    <div class="ws-card" id="ws-archon">
+                        <div class="ws-card-header">
+                            <i class="fas fa-dragon" style="color:#ff6e40"></i>
+                            <h3>Archon Hunt</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Steel Path -->
+                    <div class="ws-card" id="ws-steelpath">
+                        <div class="ws-card-header">
+                            <i class="fas fa-fire" style="color:#ffd54f"></i>
+                            <h3>Steel Path</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Arbitration -->
+                    <div class="ws-card" id="ws-arbitration">
+                        <div class="ws-card-header">
+                            <i class="fas fa-scale-balanced" style="color:#69f0ae"></i>
+                            <h3>Arbitration</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Void Trader -->
+                    <div class="ws-card" id="ws-baro">
+                        <div class="ws-card-header">
+                            <i class="fas fa-gem" style="color:#e040fb"></i>
+                            <h3>Void Trader</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Deal -->
+                    <div class="ws-card" id="ws-deals">
+                        <div class="ws-card-header">
+                            <i class="fas fa-tags" style="color:#ffd54f"></i>
+                            <h3>Daily Deals</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Duviri Choices -->
+                    <div class="ws-card" id="ws-duviri">
+                        <div class="ws-card-header">
+                            <i class="fas fa-masks-theater" style="color:#e040fb"></i>
+                            <h3>Duviri</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Construction Progress -->
+                    <div class="ws-card" id="ws-construction">
+                        <div class="ws-card-header">
+                            <i class="fas fa-industry" style="color:#ff5252"></i>
+                            <h3>Construction</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Nightwave (full width) -->
+                    <div class="ws-card ws-card-wide" id="ws-nightwave">
+                        <div class="ws-card-header">
+                            <i class="fas fa-radio" style="color:#00e5ff"></i>
+                            <h3>Nightwave</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Fissures (full width) -->
+                    <div class="ws-card ws-card-wide" id="ws-fissures">
+                        <div class="ws-card-header">
+                            <i class="fas fa-bolt" style="color:#ffd54f"></i>
+                            <h3>Void Fissures</h3>
+                            <div class="ws-card-header-actions">
+                                <select class="ws-filter" id="fissureFilter">
+                                    <option value="all">All Tiers</option>
+                                    <option value="Lith">Lith</option>
+                                    <option value="Meso">Meso</option>
+                                    <option value="Neo">Neo</option>
+                                    <option value="Axi">Axi</option>
+                                    <option value="Requiem">Requiem</option>
+                                    <option value="Omnia">Omnia</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Invasions (full width) -->
+                    <div class="ws-card ws-card-wide" id="ws-invasions">
+                        <div class="ws-card-header">
+                            <i class="fas fa-rocket" style="color:#ff6e40"></i>
+                            <h3>Invasions</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- Events (full width) -->
+                    <div class="ws-card ws-card-wide" id="ws-events">
+                        <div class="ws-card-header">
+                            <i class="fas fa-calendar-star" style="color:#69f0ae"></i>
+                            <h3>Active Events</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
+
+                    <!-- News (full width) -->
+                    <div class="ws-card ws-card-wide" id="ws-news">
+                        <div class="ws-card-header">
+                            <i class="fas fa-newspaper" style="color:#00e5ff"></i>
+                            <h3>News</h3>
+                        </div>
+                        <div class="ws-card-body ws-loading">
+                            <div class="ws-spinner"></div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            <!-- Daily Tasks Section -->
-            <section class="bg-gray-800 rounded-lg p-6 shadow-lg">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-semibold text-green-400">
-                        <i class="fas fa-calendar-day mr-2"></i>Daily Tasks
-                    </h2>
-                    <button id="resetDaily" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm transition-colors">
-                        <i class="fas fa-redo mr-1"></i>Reset Daily
-                    </button>
+            <!-- ==================== HISTORY ==================== -->
+            <section class="tab-panel" id="tab-history">
+                <div class="panel-header">
+                    <div>
+                        <h2>Weekly History</h2>
+                        <p class="panel-subtitle">Track your progress across weeks</p>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-ghost btn-sm" id="clearHistory">
+                            <i class="fas fa-trash"></i> Clear All
+                        </button>
+                    </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="dailyTasks">
-                    <!-- Daily tasks will be populated by JavaScript -->
+                <div class="history-container" id="historyContainer">
+                    <div class="empty-state" id="historyEmpty">
+                        <i class="fas fa-hourglass-half"></i>
+                        <p>No history yet. Complete some weekly tasks to start tracking!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== BOOSTERS ==================== -->
+            <section class="tab-panel" id="tab-boosters">
+                <div class="panel-header">
+                    <div>
+                        <h2>Booster Plans</h2>
+                        <p class="panel-subtitle">Plan what to do when you get boosters</p>
+                    </div>
+                </div>
+                <div class="boosters-grid" id="boostersGrid"></div>
+            </section>
+
+            <!-- ==================== EVENTS / CUSTOM ==================== -->
+            <section class="tab-panel" id="tab-events">
+                <div class="panel-header">
+                    <div>
+                        <h2>Custom Events & Tasks</h2>
+                        <p class="panel-subtitle">Track limited-time events and personal goals</p>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-accent btn-sm" id="addEventBtn">
+                            <i class="fas fa-plus"></i> Add Event
+                        </button>
+                    </div>
+                </div>
+                <div class="events-container" id="eventsContainer">
+                    <div class="empty-state" id="eventsEmpty">
+                        <i class="fas fa-calendar-plus"></i>
+                        <p>No active events. Add one to start tracking!</p>
+                    </div>
                 </div>
             </section>
         </main>
+    </div>
 
-        <footer class="text-center mt-12 text-gray-500 text-sm">
-            <p>Warframe Reminder App - Stay on top of your grind!</p>
-        </footer>
+    <!-- Add Event Modal -->
+    <div class="modal-overlay" id="eventModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-star"></i> Add Custom Event</h3>
+                <button class="modal-close" id="closeEventModal"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="eventName">Event Name</label>
+                    <input type="text" id="eventName" placeholder="e.g. Plague Star, Nightwave S5..." class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="eventIcon">Icon</label>
+                    <select id="eventIcon" class="form-input">
+                        <option value="fas fa-star">Star</option>
+                        <option value="fas fa-skull-crossbones">Skull</option>
+                        <option value="fas fa-virus">Virus</option>
+                        <option value="fas fa-trophy">Trophy</option>
+                        <option value="fas fa-flag">Flag</option>
+                        <option value="fas fa-fire">Fire</option>
+                        <option value="fas fa-bolt">Lightning</option>
+                        <option value="fas fa-ghost">Ghost</option>
+                        <option value="fas fa-dragon">Dragon</option>
+                        <option value="fas fa-wand-magic-sparkles">Magic</option>
+                        <option value="fas fa-meteor">Meteor</option>
+                        <option value="fas fa-shield-halved">Shield</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="eventColor">Color Theme</label>
+                    <div class="color-picker" id="eventColorPicker">
+                        <button class="color-swatch active" data-color="#00e5ff" style="background:#00e5ff"></button>
+                        <button class="color-swatch" data-color="#ffd54f" style="background:#ffd54f"></button>
+                        <button class="color-swatch" data-color="#ff5252" style="background:#ff5252"></button>
+                        <button class="color-swatch" data-color="#69f0ae" style="background:#69f0ae"></button>
+                        <button class="color-swatch" data-color="#e040fb" style="background:#e040fb"></button>
+                        <button class="color-swatch" data-color="#ff6e40" style="background:#ff6e40"></button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tasks (one per line)</label>
+                    <textarea id="eventTasks" class="form-input form-textarea" placeholder="Farm Hemocyte&#10;Get Plague Kripath&#10;Reach max standing..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="cancelEvent">Cancel</button>
+                <button class="btn btn-accent" id="saveEvent">Save Event</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Settings Modal -->
+    <div class="modal-overlay" id="notifModal">
+        <div class="modal" style="max-width:560px">
+            <div class="modal-header">
+                <h3><i class="fas fa-bell"></i> Notification Settings</h3>
+                <button class="modal-close" id="closeNotifModal"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <!-- Browser Notifications -->
+                <div class="notif-section">
+                    <div class="notif-section-header">
+                        <i class="fas fa-desktop" style="color:var(--accent)"></i>
+                        <span>Browser Notifications</span>
+                        <div class="notif-toggle-wrapper">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="browserNotifToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <p class="notif-hint" id="browserNotifStatus">Click toggle to enable</p>
+                </div>
+
+                <!-- Discord Webhook -->
+                <div class="notif-section">
+                    <div class="notif-section-header">
+                        <i class="fab fa-discord" style="color:#5865F2"></i>
+                        <span>Discord Webhook</span>
+                        <div class="notif-toggle-wrapper">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="discordNotifToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top:0.5rem; margin-bottom:0.5rem">
+                        <input type="text" id="discordWebhookUrl" placeholder="https://discord.com/api/webhooks/..." class="form-input" style="font-size:0.78rem">
+                    </div>
+                    <p class="notif-hint">Paste your Discord channel webhook URL. Messages will be sent there.</p>
+                    <button class="btn btn-ghost btn-sm" id="testDiscordBtn" style="margin-top:0.3rem">
+                        <i class="fab fa-discord"></i> Send Test Message
+                    </button>
+                </div>
+
+                <!-- Alert Rules -->
+                <div class="notif-section">
+                    <div class="notif-section-header">
+                        <i class="fas fa-clock" style="color:var(--gold)"></i>
+                        <span>Alert Rules</span>
+                        <button class="btn btn-accent btn-sm" id="addAlertRuleBtn" style="margin-left:auto">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                    <p class="notif-hint">Get notified before a cycle changes. Great for Eidolon hunts!</p>
+                    <div class="alert-rules-list" id="alertRulesList">
+                        <!-- Rules rendered by JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="closeNotifBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Alert Rule Modal -->
+    <div class="modal-overlay" id="alertRuleModal">
+        <div class="modal" style="max-width:420px">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus"></i> Add Alert Rule</h3>
+                <button class="modal-close" id="closeAlertRuleModal"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="ruleCycle">Cycle</label>
+                    <select id="ruleCycle" class="form-input">
+                        <option value="cetusCycle">Cetus (Plains of Eidolon)</option>
+                        <option value="earthCycle">Earth</option>
+                        <option value="vallisCycle">Orb Vallis</option>
+                        <option value="cambionCycle">Cambion Drift</option>
+                        <option value="zarimanCycle">Zariman</option>
+                        <option value="duviriCycle">Duviri</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="ruleState">Notify when state is</label>
+                    <select id="ruleState" class="form-input">
+                        <option value="night">Night</option>
+                        <option value="day">Day</option>
+                        <option value="warm">Warm</option>
+                        <option value="cold">Cold</option>
+                        <option value="fass">Fass</option>
+                        <option value="vome">Vome</option>
+                        <option value="corpus">Corpus</option>
+                        <option value="grineer">Grineer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="ruleLeadTime">Notify how early (minutes before)</label>
+                    <select id="ruleLeadTime" class="form-input">
+                        <option value="0">When it starts</option>
+                        <option value="5">5 minutes before</option>
+                        <option value="10">10 minutes before</option>
+                        <option value="15">15 minutes before</option>
+                        <option value="30">30 minutes before</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Send to</label>
+                    <div style="display:flex; gap:1rem; margin-top:0.3rem">
+                        <label class="notif-checkbox-label">
+                            <input type="checkbox" id="ruleSendBrowser" checked> Browser
+                        </label>
+                        <label class="notif-checkbox-label">
+                            <input type="checkbox" id="ruleSendDiscord"> Discord
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="cancelAlertRule">Cancel</button>
+                <button class="btn btn-accent" id="saveAlertRule">Save Rule</button>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
