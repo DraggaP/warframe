@@ -604,7 +604,6 @@ async function fetchWorldState() {
         renderStatusBar(worldStateData);
         renderWorldStateCards(worldStateData);
         checkAlertRules(worldStateData);
-        initStatusBarScroll();
     } catch (err) {
         console.error('Failed to fetch world state:', err);
     }
