@@ -3,7 +3,6 @@
 // ============================================
 
 const API_BASE = 'https://api.warframestat.us/pc';
-const BROWSE_WF_BASE = 'https://browse.wf';
 
 // ============================================
 // ARBITRATION DATA from browse.wf
@@ -51,66 +50,54 @@ const TIER_COLORS = {
     'D': { bg: 'rgba(255, 82, 82, 0.12)', border: 'rgba(255, 82, 82, 0.3)', text: '#ff5252', label: 'D' }
 };
 
-// Cached browse.wf data
+// Cached arbitration data (loaded from local static files)
 let arbiSchedule = null;    // Array of [timestamp, nodeId]
 let arbiNodeCache = null;   // { nodeId: { name, system, missionType, faction } }
-let arbiDict = null;        // Localization dict
 
-// Mission type mapping
-const MISSION_TYPE_NAMES = {
-    'MT_SURVIVAL': 'Survival', 'MT_DEFENSE': 'Defense', 'MT_TERRITORY': 'Interception',
-    'MT_EXCAVATE': 'Excavation', 'MT_PURIFY': 'Infested Salvage', 'MT_EVACUATION': 'Defection',
-    'MT_ARTIFACT': 'Disruption', 'MT_CORRUPTION': 'Void Cascade', 'MT_VOID_CASCADE': 'Void Cascade'
-};
-
-const FACTION_NAMES = {
-    'FC_GRINEER': 'Grineer', 'FC_CORPUS': 'Corpus', 'FC_INFESTATION': 'Infested',
-    'FC_OROKIN': 'Corrupted', 'FC_SENTIENT': 'Sentient', 'FC_NARMER': 'Narmer',
-    'FC_SCALDRA': 'Scaldra', 'FC_TECHROT': 'Techrot'
-};
-
-async function fetchBrowseWfArbiData() {
+async function loadArbiData() {
     try {
-        const [scheduleRes, regionsRes, dictRes] = await Promise.all([
-            fetch(`${BROWSE_WF_BASE}/arbys.txt`),
-            fetch(`${BROWSE_WF_BASE}/warframe-public-export-plus/ExportRegions.json`),
-            fetch(`${BROWSE_WF_BASE}/warframe-public-export-plus/dict.en.json`)
+        // Load from local static files (pre-downloaded from browse.wf, no CORS issues)
+        const [scheduleRes, nodesRes] = await Promise.all([
+            fetch('data/arbys.txt'),
+            fetch('data/arbi-nodes.json')
         ]);
 
-        if (!scheduleRes.ok || !regionsRes.ok || !dictRes.ok) {
-            throw new Error('One or more browse.wf requests failed');
+        if (!scheduleRes.ok || !nodesRes.ok) {
+            throw new Error('Failed to load local arbi data files');
         }
 
         const scheduleText = await scheduleRes.text();
-        const regions = await regionsRes.json();
-        arbiDict = await dictRes.json();
+        const nodesData = await nodesRes.json();
 
-        // Parse schedule
+        // Parse schedule: each line is "timestamp,nodeId"
         arbiSchedule = scheduleText.split('\n')
             .map(line => line.trim().split(','))
             .filter(arr => arr.length === 2)
             .map(arr => [parseInt(arr[0]), arr[1]]);
 
-        // Build node cache with resolved names
+        // Build node cache from pre-resolved data
+        // arbi-nodes.json has { nodes: { nodeId: { n, s, m, f } }, tiers: { nodeId: tier } }
         arbiNodeCache = {};
-        const uniqueNodes = new Set(arbiSchedule.map(s => s[1]));
-        for (const nodeId of uniqueNodes) {
-            const region = regions[nodeId];
-            if (region) {
-                arbiNodeCache[nodeId] = {
-                    name: arbiDict[region.name] || region.name.split('/').pop(),
-                    system: arbiDict[region.systemName] || region.systemName.split('/').pop(),
-                    missionType: MISSION_TYPE_NAMES[region.missionType] || region.missionType,
-                    faction: FACTION_NAMES[region.faction] || region.faction,
-                    rawMissionType: region.missionType
-                };
+        for (const [nodeId, info] of Object.entries(nodesData.nodes || {})) {
+            arbiNodeCache[nodeId] = {
+                name: info.n,
+                system: info.s,
+                missionType: info.m,
+                faction: info.f
+            };
+        }
+
+        // Override tier data if present in the JSON
+        if (nodesData.tiers) {
+            for (const [nodeId, tier] of Object.entries(nodesData.tiers)) {
+                ARBI_TIERS_BY_ID[nodeId] = tier;
             }
         }
 
         console.log(`Loaded ${arbiSchedule.length} arbitration entries, ${Object.keys(arbiNodeCache).length} unique nodes`);
         return true;
     } catch (err) {
-        console.error('Failed to fetch browse.wf arbi data:', err);
+        console.error('Failed to load arbi data:', err);
         return false;
     }
 }
@@ -691,9 +678,9 @@ async function fetchWorldState() {
             fetch(API_BASE, { headers: { 'Accept': 'application/json' } }).then(r => r.ok ? r.json() : null)
         ];
 
-        // Only fetch browse.wf data if not already loaded
+        // Only load arbi data if not already loaded
         if (!arbiSchedule) {
-            promises.push(fetchBrowseWfArbiData());
+            promises.push(loadArbiData());
         }
 
         const [wsData] = await Promise.all(promises);
@@ -857,8 +844,10 @@ function renderWorldStateCards(data) {
     renderDailyDeals(data.dailyDeals);
     renderDuviriDetails(data.duviriCycle);
     renderConstruction(data.constructionProgress);
+    renderCircuit(data.endlessXpChoices);
     renderNightwave(data.nightwave);
     renderFissures(data.fissures);
+    renderVoidStorms(data.voidStorms);
     renderInvasions(data.invasions);
     renderActiveEvents(data.events);
     renderNews(data.news);
@@ -1400,6 +1389,63 @@ function renderActiveEvents(events) {
             </div>
         ` : ''}
     `).join('');
+    body.classList.remove('ws-loading');
+}
+
+// --- The Circuit ---
+
+function renderCircuit(choices) {
+    const body = document.querySelector('#ws-circuit .ws-card-body');
+    if (!body) return;
+    if (!choices || choices.length === 0) {
+        body.innerHTML = '<div class="ws-empty">No Circuit data</div>';
+        body.classList.remove('ws-loading');
+        return;
+    }
+
+    body.innerHTML = choices.map(choice => {
+        const isNormal = (choice.category || '').toLowerCase().includes('normal');
+        const label = isNormal ? 'Normal' : 'Steel Path';
+        const icon = isNormal ? 'fas fa-circle-play' : 'fas fa-fire';
+        const color = isNormal ? '#00e5ff' : '#ffd54f';
+        return `
+            <div style="margin-bottom:0.5rem">
+                <div class="ws-label"><i class="${icon}" style="color:${color}; margin-right:0.3rem"></i>${label}</div>
+                <div style="display:flex; gap:0.4rem; flex-wrap:wrap">
+                    ${choice.choices.map(c => `<span class="ws-tag" style="background:${color}18; color:${color}; border:1px solid ${color}30">${c}</span>`).join('')}
+                </div>
+            </div>
+        `;
+    }).join('');
+    body.classList.remove('ws-loading');
+}
+
+// --- Void Storms (Railjack Fissures) ---
+
+function renderVoidStorms(storms) {
+    const body = document.querySelector('#ws-voidstorms .ws-card-body');
+    if (!body) return;
+    if (!storms || storms.length === 0) {
+        body.innerHTML = '<div class="ws-empty">No active Void Storms</div>';
+        body.classList.remove('ws-loading');
+        return;
+    }
+
+    const tierOrder = { Lith: 1, Meso: 2, Neo: 3, Axi: 4, Requiem: 5, Omnia: 6 };
+    const sorted = [...storms].sort((a, b) => (tierOrder[a.tier] || 99) - (tierOrder[b.tier] || 99));
+
+    body.innerHTML = sorted.map(s => {
+        const tierClass = 'ws-tag-' + (s.tier || '').toLowerCase();
+        return `
+            <div class="ws-row">
+                <div class="ws-row-left">
+                    <span class="ws-tag ${tierClass}">${s.tier || '?'}</span>
+                    <span class="ws-row-text"><span class="ws-highlight">${s.missionType || 'Mission'}</span> - ${s.node || '?'}</span>
+                </div>
+                <div class="ws-row-right">${timeUntil(s.expiry)}</div>
+            </div>
+        `;
+    }).join('');
     body.classList.remove('ws-loading');
 }
 
