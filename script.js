@@ -3,60 +3,44 @@
 // ============================================
 
 const API_BASE = 'https://api.warframestat.us/pc';
+const BROWSE_WF_BASE = 'https://browse.wf';
 
 // ============================================
-// ARBITRATION TIER LIST
-// Based on community tier lists (Arbitration Goons)
-// S = best rotations, A = great, B = decent, C = meh, F = avoid
+// ARBITRATION DATA from browse.wf
+// Uses arbys.txt schedule + ExportRegions for node info
+// Tier list from Arbitration Goons via arbyTiers.js
 // ============================================
 
-const ARBI_TIERS = {
-    // S-Tier - Best arbitration nodes
-    'Seimeni (Ceres)': 'S', 'Gabii (Ceres)': 'S', 'Cinxia (Ceres)': 'S',
-    'Hydron (Sedna)': 'S', 'Helene (Saturn)': 'S', 'Akkad (Eris)': 'S',
-    'Hieracon (Pluto)': 'S', 'Xini (Eris)': 'S', 'Berehynia (Sedna)': 'S',
-    'Stöfler (Lua)': 'S', 'Outer Terminus (Pluto)': 'S',
-
-    // A-Tier - Very good nodes
-    'Larzac (Europa)': 'A', 'Paimon (Europa)': 'A', 'Io (Jupiter)': 'A',
-    'Sinai (Jupiter)': 'A', 'Draco (Ceres)': 'A', 'Lith (Earth)': 'A',
-    'Stephano (Uranus)': 'A', 'Proteus (Neptune)': 'A', 'Despina (Neptune)': 'A',
-    'Assur (Uranus)': 'A', 'Ophelia (Uranus)': 'A', 'Tikal (Earth)': 'A',
-    'Casta (Ceres)': 'A', 'Bode (Ceres)': 'A', 'Odin (Mercury)': 'A',
-    'Kiliken (Venus)': 'A', 'Tessera (Venus)': 'A',
-
-    // B-Tier - Decent nodes
-    'Spear (Mars)': 'B', 'Augustus (Mars)': 'B', 'Wahiba (Mars)': 'B',
-    'Kadesh (Mars)': 'B', 'Cameria (Jupiter)': 'B', 'Callisto (Jupiter)': 'B',
-    'Elara (Jupiter)': 'B', 'Lex (Ceres)': 'B', 'Nuovo (Ceres)': 'B',
-    'Titan (Saturn)': 'B', 'Cassini (Saturn)': 'B', 'Umbriel (Uranus)': 'B',
-    'Miranda (Uranus)': 'B', 'Kelashin (Neptune)': 'B', 'Sao (Neptune)': 'B',
-
-    // C-Tier - Below average
-    'Sangeru (Sedna)': 'C', 'Selkie (Sedna)': 'C', 'Adaro (Sedna)': 'C',
-    'Vodyanoi (Sedna)': 'C', 'Kelpie (Sedna)': 'C',
-    'Zabala (Eris)': 'C', 'Brugia (Eris)': 'C', 'Isos (Eris)': 'C',
-    'Narcissus (Pluto)': 'C', 'Cypress (Pluto)': 'C',
-    'Pavlov (Lua)': 'C', 'Tycho (Lua)': 'C',
-
-    // F-Tier - Avoid
-    'Palus (Pluto)': 'F', 'Acheron (Pluto)': 'F',
-    'Cerberus (Pluto)': 'F', 'Regna (Pluto)': 'F',
-    'Zeugma (Phobos)': 'F', 'Opik (Phobos)': 'F',
-    'E Gate (Venus)': 'F', 'Romula (Venus)': 'F',
-    'Malva (Venus)': 'F', 'Lares (Mercury)': 'F'
+// Tier data from browse.wf/supplemental-data/arbyTiers.js (Arbitration Goons)
+const ARBI_TIERS_BY_ID = {
+    SolNode106: 'S', SolNode147: 'S', SolNode149: 'S', ClanNode22: 'S',
+    SolNode25: 'A', SolNode224: 'A', SolNode195: 'A', SolNode42: 'A', ClanNode24: 'A', ClanNode6: 'A',
+    SolNode707: 'B', SolNode125: 'B', ClanNode4: 'B', SolNode412: 'B', SolNode719: 'B',
+    SolNode22: 'B', SolNode211: 'B', ClanNode8: 'B', SolNode72: 'B', SolNode212: 'B', SolNode46: 'B', SolNode450: 'B',
+    SolNode130: 'C', ClanNode15: 'C', SolNode408: 'C', SolNode402: 'C', SolNode26: 'C', SolNode18: 'C',
+    SolNode305: 'C', SolNode185: 'C', SolNode43: 'C', SolNode64: 'C', SolNode122: 'C',
+    SolNode167: 'C', SolNode164: 'C', ClanNode18: 'C',
+    SolNode85: 'D', ClanNode2: 'D', SolNode172: 'D', ClanNode0: 'D', SolNode17: 'D',
+    SettlementNode11: 'D', SolNode23: 'D'
 };
 
+function getArbiTierById(nodeId) {
+    return ARBI_TIERS_BY_ID[nodeId] || null;
+}
+
+// Legacy name-based lookup (fallback when using warframestat API data)
 function getArbiTier(node) {
     if (!node) return null;
-    // Try exact match first
-    if (ARBI_TIERS[node]) return ARBI_TIERS[node];
-    // Try matching just the node name (before parentheses)
-    const name = node.split('(')[0].trim();
-    for (const [key, tier] of Object.entries(ARBI_TIERS)) {
-        if (key.startsWith(name)) return tier;
+    // If we have browse.wf data loaded, try to find by resolved name
+    if (arbiNodeCache) {
+        for (const [nodeId, info] of Object.entries(arbiNodeCache)) {
+            const display = `${info.name} (${info.system})`;
+            if (display === node || info.name === node.split('(')[0].trim()) {
+                return getArbiTierById(nodeId) || 'B';
+            }
+        }
     }
-    return 'B'; // Default to B-tier for unknown nodes
+    return 'B';
 }
 
 const TIER_COLORS = {
@@ -64,8 +48,128 @@ const TIER_COLORS = {
     'A': { bg: 'rgba(105, 240, 174, 0.15)', border: 'rgba(105, 240, 174, 0.4)', text: '#69f0ae', label: 'A' },
     'B': { bg: 'rgba(0, 229, 255, 0.15)', border: 'rgba(0, 229, 255, 0.4)', text: '#00e5ff', label: 'B' },
     'C': { bg: 'rgba(255, 110, 64, 0.12)', border: 'rgba(255, 110, 64, 0.3)', text: '#ff6e40', label: 'C' },
-    'F': { bg: 'rgba(255, 82, 82, 0.12)', border: 'rgba(255, 82, 82, 0.3)', text: '#ff5252', label: 'F' }
+    'D': { bg: 'rgba(255, 82, 82, 0.12)', border: 'rgba(255, 82, 82, 0.3)', text: '#ff5252', label: 'D' }
 };
+
+// Cached browse.wf data
+let arbiSchedule = null;    // Array of [timestamp, nodeId]
+let arbiNodeCache = null;   // { nodeId: { name, system, missionType, faction } }
+let arbiDict = null;        // Localization dict
+
+// Mission type mapping
+const MISSION_TYPE_NAMES = {
+    'MT_SURVIVAL': 'Survival', 'MT_DEFENSE': 'Defense', 'MT_TERRITORY': 'Interception',
+    'MT_EXCAVATE': 'Excavation', 'MT_PURIFY': 'Infested Salvage', 'MT_EVACUATION': 'Defection',
+    'MT_ARTIFACT': 'Disruption', 'MT_CORRUPTION': 'Void Cascade', 'MT_VOID_CASCADE': 'Void Cascade'
+};
+
+const FACTION_NAMES = {
+    'FC_GRINEER': 'Grineer', 'FC_CORPUS': 'Corpus', 'FC_INFESTATION': 'Infested',
+    'FC_OROKIN': 'Corrupted', 'FC_SENTIENT': 'Sentient', 'FC_NARMER': 'Narmer',
+    'FC_SCALDRA': 'Scaldra', 'FC_TECHROT': 'Techrot'
+};
+
+async function fetchBrowseWfArbiData() {
+    try {
+        const [scheduleRes, regionsRes, dictRes] = await Promise.all([
+            fetch(`${BROWSE_WF_BASE}/arbys.txt`),
+            fetch(`${BROWSE_WF_BASE}/warframe-public-export-plus/ExportRegions.json`),
+            fetch(`${BROWSE_WF_BASE}/warframe-public-export-plus/dict.en.json`)
+        ]);
+
+        if (!scheduleRes.ok || !regionsRes.ok || !dictRes.ok) {
+            throw new Error('One or more browse.wf requests failed');
+        }
+
+        const scheduleText = await scheduleRes.text();
+        const regions = await regionsRes.json();
+        arbiDict = await dictRes.json();
+
+        // Parse schedule
+        arbiSchedule = scheduleText.split('\n')
+            .map(line => line.trim().split(','))
+            .filter(arr => arr.length === 2)
+            .map(arr => [parseInt(arr[0]), arr[1]]);
+
+        // Build node cache with resolved names
+        arbiNodeCache = {};
+        const uniqueNodes = new Set(arbiSchedule.map(s => s[1]));
+        for (const nodeId of uniqueNodes) {
+            const region = regions[nodeId];
+            if (region) {
+                arbiNodeCache[nodeId] = {
+                    name: arbiDict[region.name] || region.name.split('/').pop(),
+                    system: arbiDict[region.systemName] || region.systemName.split('/').pop(),
+                    missionType: MISSION_TYPE_NAMES[region.missionType] || region.missionType,
+                    faction: FACTION_NAMES[region.faction] || region.faction,
+                    rawMissionType: region.missionType
+                };
+            }
+        }
+
+        console.log(`Loaded ${arbiSchedule.length} arbitration entries, ${Object.keys(arbiNodeCache).length} unique nodes`);
+        return true;
+    } catch (err) {
+        console.error('Failed to fetch browse.wf arbi data:', err);
+        return false;
+    }
+}
+
+function getCurrentArbi() {
+    if (!arbiSchedule || arbiSchedule.length === 0) return null;
+    const nowSec = Math.floor(Date.now() / 1000);
+    // Find the current arbitration (largest timestamp <= now)
+    let current = null;
+    for (let i = arbiSchedule.length - 1; i >= 0; i--) {
+        if (arbiSchedule[i][0] <= nowSec) {
+            current = arbiSchedule[i];
+            break;
+        }
+    }
+    return current;
+}
+
+function getUpcomingArbis(count = 20) {
+    if (!arbiSchedule || arbiSchedule.length === 0) return [];
+    const nowSec = Math.floor(Date.now() / 1000);
+    const upcoming = [];
+    for (let i = 0; i < arbiSchedule.length; i++) {
+        if (arbiSchedule[i][0] > nowSec) {
+            upcoming.push(arbiSchedule[i]);
+            if (upcoming.length >= count) break;
+        }
+    }
+    return upcoming;
+}
+
+function getNextTieredArbi(targetTiers) {
+    const upcoming = getUpcomingArbis(100);
+    for (const [ts, nodeId] of upcoming) {
+        const tier = getArbiTierById(nodeId);
+        if (tier && targetTiers.includes(tier)) {
+            return { timestamp: ts, nodeId, tier };
+        }
+    }
+    return null;
+}
+
+function formatArbiNode(nodeId) {
+    const info = arbiNodeCache?.[nodeId];
+    if (!info) return nodeId;
+    return `${info.name} (${info.system})`;
+}
+
+function formatArbiDetails(nodeId) {
+    const info = arbiNodeCache?.[nodeId];
+    if (!info) return { name: nodeId, system: '', missionType: '', faction: '', display: nodeId };
+    return {
+        name: info.name,
+        system: info.system,
+        missionType: info.missionType,
+        faction: info.faction,
+        display: `${info.name} (${info.system})`
+    };
+}
 
 // --- Task Definitions ---
 
@@ -582,12 +686,45 @@ function setupWorldState() {
 
 async function fetchWorldState() {
     try {
-        const res = await fetch(API_BASE, { headers: { 'Accept': 'application/json' } });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        worldStateData = await res.json();
+        // Fetch main world state and browse.wf arbi data in parallel
+        const promises = [
+            fetch(API_BASE, { headers: { 'Accept': 'application/json' } }).then(r => r.ok ? r.json() : null)
+        ];
 
-        // If arbitration data is missing or empty from main endpoint, try dedicated endpoint
-        if (!worldStateData.arbitration || !worldStateData.arbitration.node) {
+        // Only fetch browse.wf data if not already loaded
+        if (!arbiSchedule) {
+            promises.push(fetchBrowseWfArbiData());
+        }
+
+        const [wsData] = await Promise.all(promises);
+
+        if (wsData) {
+            worldStateData = wsData;
+        }
+
+        // Use browse.wf data for arbitrations (more reliable than warframestat semlar data)
+        if (arbiSchedule && arbiNodeCache) {
+            const currentArbi = getCurrentArbi();
+            if (currentArbi) {
+                const [ts, nodeId] = currentArbi;
+                const details = formatArbiDetails(nodeId);
+                const tier = getArbiTierById(nodeId);
+                // Override the warframestat arbitration data with browse.wf data
+                worldStateData.arbitration = {
+                    node: details.display,
+                    type: details.missionType,
+                    enemy: details.faction,
+                    expiry: new Date((ts + 3600) * 1000).toISOString(), // Each arbi lasts 1 hour
+                    archwing: false,
+                    _nodeId: nodeId,
+                    _tier: tier,
+                    _source: 'browse.wf'
+                };
+            }
+        }
+
+        // Fallback to warframestat dedicated endpoint if we still have no arbi data
+        if ((!worldStateData.arbitration || !worldStateData.arbitration.node) && !arbiSchedule) {
             try {
                 const arbRes = await fetch(`${API_BASE}/arbitration`, { headers: { 'Accept': 'application/json' } });
                 if (arbRes.ok) {
@@ -802,12 +939,12 @@ function renderSteelPath(sp) {
 function renderArbitration(arb) {
     const body = document.querySelector('#ws-arbitration .ws-card-body');
     if (!arb || (!arb.node && !arb.type) || arb.type === 'Unknown') {
-        body.innerHTML = '<div class="ws-empty">No arbitration data available. The API may not have current rotation info.</div>';
+        body.innerHTML = '<div class="ws-empty">No arbitration data available. The schedule data may not cover this time period.</div>';
         body.classList.remove('ws-loading');
         return;
     }
 
-    const tier = getArbiTier(arb.node);
+    const tier = arb._tier || getArbiTierById(arb._nodeId) || getArbiTier(arb.node);
     const tierInfo = TIER_COLORS[tier] || TIER_COLORS['B'];
 
     body.innerHTML = `
@@ -828,15 +965,46 @@ function renderArbitration(arb) {
                 <span class="ws-row-text">${arb.enemy || 'Unknown'} ${arb.archwing ? '(Archwing)' : ''}</span>
             </div>
         </div>
+        ${arb._source === 'browse.wf' ? '<div style="font-size:0.62rem; color:var(--text-muted); margin-top:0.3rem; opacity:0.6">Data from browse.wf</div>' : ''}
         ${renderUpcomingNoteworthyArbis()}
     `;
     body.classList.remove('ws-loading');
 }
 
 function renderUpcomingNoteworthyArbis() {
-    // This shows a hint about the tier system in the card
-    return `
-        <div class="ws-divider"></div>
+    let html = '<div class="ws-divider"></div>';
+
+    // Show upcoming noteworthy arbitrations from browse.wf
+    if (arbiSchedule && arbiNodeCache) {
+        const upcoming = getUpcomingArbis(50);
+        const noteworthy = upcoming.filter(([ts, nodeId]) => {
+            const tier = getArbiTierById(nodeId);
+            return tier === 'S' || tier === 'A';
+        }).slice(0, 5);
+
+        if (noteworthy.length > 0) {
+            html += '<div class="ws-label">Upcoming Noteworthy Arbitrations</div>';
+            html += noteworthy.map(([ts, nodeId]) => {
+                const tier = getArbiTierById(nodeId);
+                const tierInfo = TIER_COLORS[tier] || TIER_COLORS['B'];
+                const details = formatArbiDetails(nodeId);
+                const startsIn = timeUntil(new Date(ts * 1000).toISOString());
+                return `
+                    <div class="ws-row">
+                        <div class="ws-row-left">
+                            <span style="background:${tierInfo.bg}; border:1px solid ${tierInfo.border}; color:${tierInfo.text}; font-size:0.65rem; font-weight:700; padding:0.08rem 0.35rem; border-radius:3px; font-family:var(--font-display)">${tierInfo.label}</span>
+                            <span class="ws-row-text"><span class="ws-highlight">${details.name}</span> (${details.system}) - ${details.missionType}</span>
+                        </div>
+                        <div class="ws-row-right">${startsIn}</div>
+                    </div>
+                `;
+            }).join('');
+            html += '<div style="margin-top:0.3rem"></div>';
+        }
+    }
+
+    // Tier legend
+    html += `
         <div class="ws-label">Tier Ratings</div>
         <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.25rem">
             ${Object.entries(TIER_COLORS).map(([tier, info]) => `
@@ -844,10 +1012,12 @@ function renderUpcomingNoteworthyArbis() {
             `).join('')}
         </div>
         <div style="font-size:0.68rem; color:var(--text-muted); margin-top:0.3rem">
-            Based on Arbitration Goons community tier list.
+            Tier list by Arbitration Goons.
             <a href="https://discord.gg/SNRjJBMg" target="_blank" rel="noopener" style="color:var(--accent)">Join Discord</a>
+            | Data from <a href="https://browse.wf/arbys" target="_blank" rel="noopener" style="color:var(--accent)">browse.wf</a>
         </div>
     `;
+    return html;
 }
 
 // --- Arbitration Status Bar Chip ---
@@ -862,10 +1032,12 @@ function renderArbitrationChip(arb) {
         chip.querySelector('.chip-value').textContent = 'No data';
         chip.classList.remove('loading');
         tierBadge.style.display = 'none';
+        nextSChip.style.display = 'none';
+        nextAChip.style.display = 'none';
         return;
     }
 
-    const tier = getArbiTier(arb.node);
+    const tier = arb._tier || getArbiTierById(arb._nodeId) || getArbiTier(arb.node);
     const tierInfo = TIER_COLORS[tier] || TIER_COLORS['B'];
     const nodeName = arb.node ? arb.node.split('(')[0].trim() : 'Unknown';
 
@@ -883,13 +1055,35 @@ function renderArbitrationChip(arb) {
     chip.style.borderColor = tierInfo.border;
     chip.querySelector('i').style.color = tierInfo.text;
 
-    // Show upcoming S and A tier placeholders (these rotate every hour)
-    // We can estimate based on a known arbitration schedule
-    nextSChip.style.display = 'flex';
-    nextSChip.querySelector('.chip-value').textContent = 'Check World State tab';
+    // Show next S-tier and A-tier from browse.wf schedule
+    if (arbiSchedule && arbiNodeCache) {
+        const nextS = getNextTieredArbi(['S']);
+        if (nextS) {
+            const sDetails = formatArbiDetails(nextS.nodeId);
+            const sTime = timeUntil(new Date(nextS.timestamp * 1000).toISOString());
+            const sTierInfo = TIER_COLORS['S'];
+            nextSChip.style.display = 'flex';
+            nextSChip.querySelector('.chip-value').textContent = `${sDetails.name} (${sDetails.system}) in ${sTime}`;
+            nextSChip.style.borderColor = sTierInfo.border;
+        } else {
+            nextSChip.style.display = 'none';
+        }
 
-    nextAChip.style.display = 'flex';
-    nextAChip.querySelector('.chip-value').textContent = 'Check World State tab';
+        const nextA = getNextTieredArbi(['A']);
+        if (nextA) {
+            const aDetails = formatArbiDetails(nextA.nodeId);
+            const aTime = timeUntil(new Date(nextA.timestamp * 1000).toISOString());
+            const aTierInfo = TIER_COLORS['A'];
+            nextAChip.style.display = 'flex';
+            nextAChip.querySelector('.chip-value').textContent = `${aDetails.name} (${aDetails.system}) in ${aTime}`;
+            nextAChip.style.borderColor = aTierInfo.border;
+        } else {
+            nextAChip.style.display = 'none';
+        }
+    } else {
+        nextSChip.style.display = 'none';
+        nextAChip.style.display = 'none';
+    }
 }
 
 // --- Status Bar Auto-Scroll ---
