@@ -48,7 +48,7 @@
 
         <!-- ==================== LIVE STATUS BAR ==================== -->
         <div class="status-bar" id="statusBar">
-            <div class="status-bar-inner">
+            <div class="status-bar-inner" id="statusBarInner">
                 <div class="status-chip loading" id="chip-cetus">
                     <i class="fas fa-sun"></i>
                     <span class="chip-label">Cetus</span>
@@ -77,6 +77,22 @@
                 <div class="status-chip loading" id="chip-duviri">
                     <i class="fas fa-masks-theater"></i>
                     <span class="chip-label">Duviri</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip chip-arbi-current loading" id="chip-arbitration">
+                    <i class="fas fa-scale-balanced"></i>
+                    <span class="chip-label">Arbitration</span>
+                    <span class="chip-value">--</span>
+                    <span class="chip-tier-badge" id="chip-arbi-tier"></span>
+                </div>
+                <div class="status-chip chip-arbi-upcoming" id="chip-arbi-next-s" style="display:none">
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="chip-label">Next S-Tier</span>
+                    <span class="chip-value">--</span>
+                </div>
+                <div class="status-chip chip-arbi-upcoming" id="chip-arbi-next-a" style="display:none">
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="chip-label">Next A-Tier</span>
                     <span class="chip-value">--</span>
                 </div>
                 <div class="status-chip chip-accent loading" id="chip-baro">

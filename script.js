@@ -4,6 +4,69 @@
 
 const API_BASE = 'https://api.warframestat.us/pc';
 
+// ============================================
+// ARBITRATION TIER LIST
+// Based on community tier lists (Arbitration Goons)
+// S = best rotations, A = great, B = decent, C = meh, F = avoid
+// ============================================
+
+const ARBI_TIERS = {
+    // S-Tier - Best arbitration nodes
+    'Seimeni (Ceres)': 'S', 'Gabii (Ceres)': 'S', 'Cinxia (Ceres)': 'S',
+    'Hydron (Sedna)': 'S', 'Helene (Saturn)': 'S', 'Akkad (Eris)': 'S',
+    'Hieracon (Pluto)': 'S', 'Xini (Eris)': 'S', 'Berehynia (Sedna)': 'S',
+    'Stöfler (Lua)': 'S', 'Outer Terminus (Pluto)': 'S',
+
+    // A-Tier - Very good nodes
+    'Larzac (Europa)': 'A', 'Paimon (Europa)': 'A', 'Io (Jupiter)': 'A',
+    'Sinai (Jupiter)': 'A', 'Draco (Ceres)': 'A', 'Lith (Earth)': 'A',
+    'Stephano (Uranus)': 'A', 'Proteus (Neptune)': 'A', 'Despina (Neptune)': 'A',
+    'Assur (Uranus)': 'A', 'Ophelia (Uranus)': 'A', 'Tikal (Earth)': 'A',
+    'Casta (Ceres)': 'A', 'Bode (Ceres)': 'A', 'Odin (Mercury)': 'A',
+    'Kiliken (Venus)': 'A', 'Tessera (Venus)': 'A',
+
+    // B-Tier - Decent nodes
+    'Spear (Mars)': 'B', 'Augustus (Mars)': 'B', 'Wahiba (Mars)': 'B',
+    'Kadesh (Mars)': 'B', 'Cameria (Jupiter)': 'B', 'Callisto (Jupiter)': 'B',
+    'Elara (Jupiter)': 'B', 'Lex (Ceres)': 'B', 'Nuovo (Ceres)': 'B',
+    'Titan (Saturn)': 'B', 'Cassini (Saturn)': 'B', 'Umbriel (Uranus)': 'B',
+    'Miranda (Uranus)': 'B', 'Kelashin (Neptune)': 'B', 'Sao (Neptune)': 'B',
+
+    // C-Tier - Below average
+    'Sangeru (Sedna)': 'C', 'Selkie (Sedna)': 'C', 'Adaro (Sedna)': 'C',
+    'Vodyanoi (Sedna)': 'C', 'Kelpie (Sedna)': 'C',
+    'Zabala (Eris)': 'C', 'Brugia (Eris)': 'C', 'Isos (Eris)': 'C',
+    'Narcissus (Pluto)': 'C', 'Cypress (Pluto)': 'C',
+    'Pavlov (Lua)': 'C', 'Tycho (Lua)': 'C',
+
+    // F-Tier - Avoid
+    'Palus (Pluto)': 'F', 'Acheron (Pluto)': 'F',
+    'Cerberus (Pluto)': 'F', 'Regna (Pluto)': 'F',
+    'Zeugma (Phobos)': 'F', 'Opik (Phobos)': 'F',
+    'E Gate (Venus)': 'F', 'Romula (Venus)': 'F',
+    'Malva (Venus)': 'F', 'Lares (Mercury)': 'F'
+};
+
+function getArbiTier(node) {
+    if (!node) return null;
+    // Try exact match first
+    if (ARBI_TIERS[node]) return ARBI_TIERS[node];
+    // Try matching just the node name (before parentheses)
+    const name = node.split('(')[0].trim();
+    for (const [key, tier] of Object.entries(ARBI_TIERS)) {
+        if (key.startsWith(name)) return tier;
+    }
+    return 'B'; // Default to B-tier for unknown nodes
+}
+
+const TIER_COLORS = {
+    'S': { bg: 'rgba(255, 213, 79, 0.15)', border: 'rgba(255, 213, 79, 0.4)', text: '#ffd54f', label: 'S' },
+    'A': { bg: 'rgba(105, 240, 174, 0.15)', border: 'rgba(105, 240, 174, 0.4)', text: '#69f0ae', label: 'A' },
+    'B': { bg: 'rgba(0, 229, 255, 0.15)', border: 'rgba(0, 229, 255, 0.4)', text: '#00e5ff', label: 'B' },
+    'C': { bg: 'rgba(255, 110, 64, 0.12)', border: 'rgba(255, 110, 64, 0.3)', text: '#ff6e40', label: 'C' },
+    'F': { bg: 'rgba(255, 82, 82, 0.12)', border: 'rgba(255, 82, 82, 0.3)', text: '#ff5252', label: 'F' }
+};
+
 // --- Task Definitions ---
 
 const weeklyTasks = [
@@ -522,9 +585,26 @@ async function fetchWorldState() {
         const res = await fetch(API_BASE, { headers: { 'Accept': 'application/json' } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         worldStateData = await res.json();
+
+        // If arbitration data is missing or empty from main endpoint, try dedicated endpoint
+        if (!worldStateData.arbitration || !worldStateData.arbitration.node) {
+            try {
+                const arbRes = await fetch(`${API_BASE}/arbitration`, { headers: { 'Accept': 'application/json' } });
+                if (arbRes.ok) {
+                    const arbData = await arbRes.json();
+                    if (arbData && arbData.node) {
+                        worldStateData.arbitration = arbData;
+                    }
+                }
+            } catch (arbErr) {
+                console.warn('Arbitration endpoint fallback failed:', arbErr);
+            }
+        }
+
         renderStatusBar(worldStateData);
         renderWorldStateCards(worldStateData);
         checkAlertRules(worldStateData);
+        initStatusBarScroll();
     } catch (err) {
         console.error('Failed to fetch world state:', err);
     }
@@ -596,6 +676,9 @@ function renderStatusBar(data) {
             : `In ${timeUntil(baro.activation)}`;
         chipEl.classList.remove('loading');
     }
+
+    // Arbitration chip
+    renderArbitrationChip(data.arbitration);
 
     // Construction
     const cp = data.constructionProgress;
@@ -718,28 +801,131 @@ function renderSteelPath(sp) {
 
 function renderArbitration(arb) {
     const body = document.querySelector('#ws-arbitration .ws-card-body');
-    if (!arb || arb.type === 'Unknown') {
-        body.innerHTML = '<div class="ws-empty">No arbitration data</div>';
+    if (!arb || (!arb.node && !arb.type) || arb.type === 'Unknown') {
+        body.innerHTML = '<div class="ws-empty">No arbitration data available. The API may not have current rotation info.</div>';
         body.classList.remove('ws-loading');
         return;
     }
 
+    const tier = getArbiTier(arb.node);
+    const tierInfo = TIER_COLORS[tier] || TIER_COLORS['B'];
+
     body.innerHTML = `
+        <div class="ws-arbi-tier-banner" style="background:${tierInfo.bg}; border:1px solid ${tierInfo.border}; border-radius:var(--radius-sm); padding:0.5rem 0.7rem; margin-bottom:0.5rem; display:flex; align-items:center; gap:0.5rem">
+            <span class="ws-arbi-tier-badge" style="background:${tierInfo.border}; color:#000; font-weight:800; font-size:0.75rem; padding:0.15rem 0.5rem; border-radius:3px; font-family:var(--font-display); letter-spacing:0.05em">${tierInfo.label}-TIER</span>
+            <span style="color:${tierInfo.text}; font-weight:600; font-size:0.85rem">${arb.node || 'Unknown Node'}</span>
+        </div>
         <div class="ws-row">
             <div class="ws-row-left">
                 <i class="fas fa-crosshairs" style="color:#69f0ae"></i>
-                <span class="ws-row-text"><span class="ws-highlight">${arb.type}</span> - ${arb.node}</span>
+                <span class="ws-row-text"><span class="ws-highlight">${arb.type || arb.missionType || 'Mission'}</span></span>
             </div>
+            <div class="ws-row-right">${timeUntil(arb.expiry)}</div>
         </div>
         <div class="ws-row">
             <div class="ws-row-left">
                 <i class="fas fa-skull" style="color:#ff5252; font-size:0.6rem"></i>
-                <span class="ws-row-text">${arb.enemy} ${arb.archwing ? '(Archwing)' : ''}</span>
+                <span class="ws-row-text">${arb.enemy || 'Unknown'} ${arb.archwing ? '(Archwing)' : ''}</span>
             </div>
-            <div class="ws-row-right">${timeUntil(arb.expiry)}</div>
         </div>
+        ${renderUpcomingNoteworthyArbis()}
     `;
     body.classList.remove('ws-loading');
+}
+
+function renderUpcomingNoteworthyArbis() {
+    // This shows a hint about the tier system in the card
+    return `
+        <div class="ws-divider"></div>
+        <div class="ws-label">Tier Ratings</div>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.25rem">
+            ${Object.entries(TIER_COLORS).map(([tier, info]) => `
+                <span style="background:${info.bg}; border:1px solid ${info.border}; color:${info.text}; font-size:0.68rem; font-weight:700; padding:0.1rem 0.4rem; border-radius:3px; font-family:var(--font-display)">${info.label}</span>
+            `).join('')}
+        </div>
+        <div style="font-size:0.68rem; color:var(--text-muted); margin-top:0.3rem">
+            Based on Arbitration Goons community tier list.
+            <a href="https://discord.gg/SNRjJBMg" target="_blank" rel="noopener" style="color:var(--accent)">Join Discord</a>
+        </div>
+    `;
+}
+
+// --- Arbitration Status Bar Chip ---
+
+function renderArbitrationChip(arb) {
+    const chip = document.getElementById('chip-arbitration');
+    const tierBadge = document.getElementById('chip-arbi-tier');
+    const nextSChip = document.getElementById('chip-arbi-next-s');
+    const nextAChip = document.getElementById('chip-arbi-next-a');
+
+    if (!arb || (!arb.node && !arb.type)) {
+        chip.querySelector('.chip-value').textContent = 'No data';
+        chip.classList.remove('loading');
+        tierBadge.style.display = 'none';
+        return;
+    }
+
+    const tier = getArbiTier(arb.node);
+    const tierInfo = TIER_COLORS[tier] || TIER_COLORS['B'];
+    const nodeName = arb.node ? arb.node.split('(')[0].trim() : 'Unknown';
+
+    chip.querySelector('.chip-value').textContent = `${nodeName} - ${arb.type || ''} (${timeUntil(arb.expiry)})`;
+    chip.classList.remove('loading');
+
+    // Show tier badge
+    tierBadge.textContent = tierInfo.label;
+    tierBadge.style.display = 'inline-block';
+    tierBadge.style.background = tierInfo.border;
+    tierBadge.style.color = '#000';
+    tierBadge.className = 'chip-tier-badge';
+
+    // Update chip colors based on tier
+    chip.style.borderColor = tierInfo.border;
+    chip.querySelector('i').style.color = tierInfo.text;
+
+    // Show upcoming S and A tier placeholders (these rotate every hour)
+    // We can estimate based on a known arbitration schedule
+    nextSChip.style.display = 'flex';
+    nextSChip.querySelector('.chip-value').textContent = 'Check World State tab';
+
+    nextAChip.style.display = 'flex';
+    nextAChip.querySelector('.chip-value').textContent = 'Check World State tab';
+}
+
+// --- Status Bar Auto-Scroll ---
+
+let scrollInterval = null;
+let scrollPaused = false;
+
+function initStatusBarScroll() {
+    const bar = document.getElementById('statusBar');
+    const inner = document.getElementById('statusBarInner');
+    if (!bar || !inner) return;
+
+    // Clear existing interval
+    if (scrollInterval) clearInterval(scrollInterval);
+
+    // Only auto-scroll if content overflows
+    if (inner.scrollWidth <= bar.clientWidth) return;
+
+    let scrollPos = 0;
+    const scrollSpeed = 1; // pixels per tick
+
+    scrollInterval = setInterval(() => {
+        if (scrollPaused) return;
+        scrollPos += scrollSpeed;
+        if (scrollPos >= inner.scrollWidth - bar.clientWidth) {
+            scrollPos = 0;
+        }
+        bar.scrollLeft = scrollPos;
+    }, 30);
+
+    // Pause on hover
+    bar.addEventListener('mouseenter', () => { scrollPaused = true; });
+    bar.addEventListener('mouseleave', () => { scrollPaused = false; });
+    // Pause on touch
+    bar.addEventListener('touchstart', () => { scrollPaused = true; }, { passive: true });
+    bar.addEventListener('touchend', () => { scrollPaused = false; }, { passive: true });
 }
 
 // --- Void Trader ---
@@ -1339,12 +1525,19 @@ function renderNews(news) {
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .slice(0, 8);
 
-    body.innerHTML = sorted.map(n => `
-        <a href="${n.link}" target="_blank" rel="noopener" class="ws-news-link">
-            <span class="ws-news-date">${relativeDate(n.date)}</span>
-            <span class="ws-news-text">${escapeHtml(n.message)}</span>
-            <i class="fas fa-external-link-alt" style="font-size:0.6rem; color:var(--text-muted); flex-shrink:0"></i>
-        </a>
-    `).join('');
+    body.innerHTML = `<div class="ws-news-grid">${sorted.map(n => {
+        const hasImage = n.imageLink || n.image;
+        const imgUrl = n.imageLink || n.image || '';
+        return `
+            <a href="${n.link}" target="_blank" rel="noopener" class="ws-news-card${hasImage ? ' has-image' : ''}">
+                ${hasImage ? `<div class="ws-news-img-wrapper"><img src="${imgUrl}" alt="" class="ws-news-img" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : ''}
+                <div class="ws-news-card-body">
+                    <span class="ws-news-date">${relativeDate(n.date)}</span>
+                    <span class="ws-news-text">${escapeHtml(n.message)}</span>
+                </div>
+                <i class="fas fa-external-link-alt ws-news-ext-icon"></i>
+            </a>
+        `;
+    }).join('')}</div>`;
     body.classList.remove('ws-loading');
 }
