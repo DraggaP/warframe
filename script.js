@@ -737,11 +737,6 @@ async function fetchWorldState() {
         renderStatusBar(worldStateData);
         renderWorldStateCards(worldStateData);
         checkAlertRules(worldStateData);
-        checkFissureNotifications(worldStateData.fissures);
-        initStatusBarScroll();
-
-        // Fetch stream schedule (don't block world state rendering)
-        if (!streamSchedule) fetchStreamSchedule();
     } catch (err) {
         console.error('Failed to fetch world state:', err);
     }
