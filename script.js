@@ -284,6 +284,8 @@ function escapeHtml(str) {
 
 let worldStateData = null;
 let fissureFilterValue = 'all';
+let worldStateRefreshTimer = null;
+let liveCountdownInterval = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
@@ -684,7 +686,7 @@ async function fetchWorldState() {
     try {
         // Fetch main world state and browse.wf arbi data in parallel
         const promises = [
-            fetch(API_BASE, { headers: { 'Accept': 'application/json' } }).then(r => r.ok ? r.json() : null)
+            fetch(API_BASE + '/', { headers: { 'Accept': 'application/json' } }).then(r => r.ok ? r.json() : null)
         ];
 
         // Only load arbi data if not already loaded
@@ -737,12 +739,20 @@ async function fetchWorldState() {
         renderStatusBar(worldStateData);
         renderWorldStateCards(worldStateData);
         checkAlertRules(worldStateData);
+        checkFissureNotifications(worldStateData.fissures);
+
+        // Fetch stream schedule on first load or refresh
+        if (!streamSchedule) fetchStreamSchedule();
     } catch (err) {
         console.error('Failed to fetch world state:', err);
     }
 
-    // Refresh every 60s
-    setTimeout(fetchWorldState, 60000);
+    // Start live countdown timer (ticks every second)
+    startLiveCountdown();
+
+    // Schedule next full refresh in 60s (clear previous to avoid stacking)
+    if (worldStateRefreshTimer) clearTimeout(worldStateRefreshTimer);
+    worldStateRefreshTimer = setTimeout(fetchWorldState, 60000);
 }
 
 // ============================================
@@ -823,6 +833,9 @@ function renderStatusBar(data) {
         chipEl.className = 'status-chip' + (fomorian > 80 || razorback > 80 ? ' chip-danger' : '');
         chipEl.classList.remove('loading');
     }
+
+    // Initialize auto-scroll after all chips are populated
+    setTimeout(initStatusBarScroll, 100);
 }
 
 function updateChip(chipId, data, opts) {
@@ -852,7 +865,7 @@ function renderWorldStateCards(data) {
     renderDailyDeals(data.dailyDeals);
     renderDuviriDetails(data.duviriCycle);
     renderConstruction(data.constructionProgress);
-    renderCircuit(data.endlessXpChoices);
+    renderCircuit(data.duviriCycle?.choices);
     renderNightwave(data.nightwave);
     renderFissures(data.fissures);
     renderVoidStorms(data.voidStorms);
@@ -1083,10 +1096,11 @@ function renderArbitrationChip(arb) {
     }
 }
 
-// --- Status Bar Auto-Scroll ---
+// --- Status Bar Auto-Scroll (infinite loop + scroll wheel support) ---
 
 let scrollInterval = null;
 let scrollPaused = false;
+let scrollListenersAttached = false;
 
 function initStatusBarScroll() {
     const bar = document.getElementById('statusBar');
@@ -1097,26 +1111,238 @@ function initStatusBarScroll() {
     if (scrollInterval) clearInterval(scrollInterval);
 
     // Only auto-scroll if content overflows
-    if (inner.scrollWidth <= bar.clientWidth) return;
+    if (inner.scrollWidth <= bar.clientWidth) {
+        // Remove clone if exists and content fits
+        const clone = inner.querySelector('.status-bar-clone');
+        if (clone) clone.remove();
+        return;
+    }
 
-    let scrollPos = 0;
-    const scrollSpeed = 1; // pixels per tick
+    // Duplicate chips for infinite seamless scrolling
+    if (!inner.querySelector('.status-bar-clone')) {
+        const clone = inner.cloneNode(true);
+        clone.classList.add('status-bar-clone');
+        // Copy all children from clone into inner
+        while (clone.firstChild) {
+            const child = clone.firstChild;
+            child.classList?.add('status-chip-clone');
+            inner.appendChild(child);
+        }
+        clone.remove();
+    }
+
+    let scrollPos = bar.scrollLeft || 0;
+    const scrollSpeed = 0.8; // pixels per tick
+    // The midpoint where we loop back (original content width)
+    const halfWidth = (inner.scrollWidth) / 2;
 
     scrollInterval = setInterval(() => {
         if (scrollPaused) return;
         scrollPos += scrollSpeed;
-        if (scrollPos >= inner.scrollWidth - bar.clientWidth) {
-            scrollPos = 0;
+        // Seamless loop: when we've scrolled past the original content, jump back
+        if (scrollPos >= halfWidth) {
+            scrollPos -= halfWidth;
         }
         bar.scrollLeft = scrollPos;
     }, 30);
 
-    // Pause on hover
-    bar.addEventListener('mouseenter', () => { scrollPaused = true; });
-    bar.addEventListener('mouseleave', () => { scrollPaused = false; });
-    // Pause on touch
-    bar.addEventListener('touchstart', () => { scrollPaused = true; }, { passive: true });
-    bar.addEventListener('touchend', () => { scrollPaused = false; }, { passive: true });
+    // Attach event listeners only once
+    if (!scrollListenersAttached) {
+        scrollListenersAttached = true;
+
+        // Pause on hover
+        bar.addEventListener('mouseenter', () => { scrollPaused = true; });
+        bar.addEventListener('mouseleave', () => { scrollPaused = false; scrollPos = bar.scrollLeft; });
+
+        // Scroll wheel support for manual scrolling
+        bar.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            bar.scrollLeft += e.deltaY || e.deltaX;
+            scrollPos = bar.scrollLeft;
+        }, { passive: false });
+
+        // Pause on touch
+        bar.addEventListener('touchstart', () => { scrollPaused = true; }, { passive: true });
+        bar.addEventListener('touchend', () => { scrollPaused = false; scrollPos = bar.scrollLeft; }, { passive: true });
+    }
+}
+
+// ============================================
+// LIVE COUNTDOWN - Updates timers every second
+// ============================================
+
+function startLiveCountdown() {
+    if (liveCountdownInterval) clearInterval(liveCountdownInterval);
+
+    liveCountdownInterval = setInterval(() => {
+        if (!worldStateData) return;
+
+        let needsRefresh = false;
+
+        // Update status bar chips with live timers
+        updateLiveStatusBar(worldStateData);
+
+        // Update world state card timers
+        updateLiveWorldStateCards(worldStateData);
+
+        // Check if any major item has expired and trigger a full refresh
+        needsRefresh = checkForExpiredItems(worldStateData);
+
+        if (needsRefresh) {
+            console.log('Detected expired data, triggering refresh...');
+            if (worldStateRefreshTimer) clearTimeout(worldStateRefreshTimer);
+            fetchWorldState();
+        }
+    }, 1000);
+}
+
+function checkForExpiredItems(data) {
+    const now = Date.now();
+    // Check sortie, archon, fissures, etc. for expiry
+    if (data.sortie?.expiry && new Date(data.sortie.expiry).getTime() <= now) return true;
+    if (data.archonHunt?.expiry && new Date(data.archonHunt.expiry).getTime() <= now) return true;
+    if (data.arbitration?.expiry && new Date(data.arbitration.expiry).getTime() <= now) return true;
+    if (data.cetusCycle?.expiry && new Date(data.cetusCycle.expiry).getTime() <= now) return true;
+    if (data.vallisCycle?.expiry && new Date(data.vallisCycle.expiry).getTime() <= now) return true;
+    if (data.cambionCycle?.expiry && new Date(data.cambionCycle.expiry).getTime() <= now) return true;
+    if (data.zarimanCycle?.expiry && new Date(data.zarimanCycle.expiry).getTime() <= now) return true;
+    if (data.duviriCycle?.expiry && new Date(data.duviriCycle.expiry).getTime() <= now) return true;
+    return false;
+}
+
+function updateLiveStatusBar(data) {
+    // Update cycle chip timers
+    const cycleChips = [
+        { id: 'chip-cetus', cycle: data.cetusCycle, timeField: 'timeLeft', useExpiry: false },
+        { id: 'chip-earth', cycle: data.earthCycle, timeField: 'timeLeft', useExpiry: false },
+        { id: 'chip-vallis', cycle: data.vallisCycle, timeField: null, useExpiry: true },
+        { id: 'chip-cambion', cycle: data.cambionCycle, timeField: 'timeLeft', useExpiry: false },
+        { id: 'chip-zariman', cycle: data.zarimanCycle, timeField: 'timeLeft', useExpiry: false },
+    ];
+
+    cycleChips.forEach(({ id, cycle, useExpiry }) => {
+        if (!cycle) return;
+        const chip = document.getElementById(id);
+        if (!chip) return;
+        const valueEl = chip.querySelector('.chip-value');
+        if (!valueEl) return;
+        const timeStr = useExpiry ? timeUntil(cycle.expiry) : timeUntil(cycle.expiry);
+        valueEl.textContent = `${capitalize(cycle.state)} ${timeStr}`;
+    });
+
+    // Update Baro chip timer
+    const baro = data.voidTrader;
+    if (baro) {
+        const chip = document.getElementById('chip-baro');
+        if (chip) {
+            const now = Date.now();
+            const arrival = new Date(baro.activation).getTime();
+            const departure = new Date(baro.expiry).getTime();
+            const isHere = now >= arrival && now < departure;
+            chip.querySelector('.chip-value').textContent = isHere
+                ? `HERE - ${baro.location || ''} (${timeUntil(baro.expiry)})`
+                : `In ${timeUntil(baro.activation)}`;
+        }
+    }
+
+    // Update arbitration chip timer
+    const arb = data.arbitration;
+    if (arb && arb.node) {
+        const chip = document.getElementById('chip-arbitration');
+        if (chip) {
+            const nodeName = arb.node.split('(')[0].trim();
+            chip.querySelector('.chip-value').textContent = `${nodeName} - ${arb.type || ''} (${timeUntil(arb.expiry)})`;
+        }
+    }
+}
+
+function updateLiveWorldStateCards(data) {
+    // Update sortie timer
+    if (data.sortie?.expiry) {
+        const sortieLabel = document.querySelector('#ws-sortie .ws-label');
+        if (sortieLabel) sortieLabel.textContent = `Expires ${timeUntil(data.sortie.expiry)}`;
+    }
+
+    // Update archon hunt timer
+    if (data.archonHunt?.expiry) {
+        const archonLabel = document.querySelector('#ws-archon .ws-label');
+        if (archonLabel) archonLabel.textContent = `Expires ${timeUntil(data.archonHunt.expiry)}`;
+    }
+
+    // Update arbitration timer
+    if (data.arbitration?.expiry) {
+        const arbTimeEl = document.querySelector('#ws-arbitration .ws-row-right');
+        if (arbTimeEl) arbTimeEl.textContent = timeUntil(data.arbitration.expiry);
+    }
+
+    // Update void trader timer
+    if (data.voidTrader) {
+        const baroBody = document.querySelector('#ws-baro .ws-card-body');
+        if (baroBody && !baroBody.classList.contains('ws-loading')) {
+            // Re-render void trader to update all timers
+            renderVoidTrader(data.voidTrader);
+        }
+    }
+
+    // Update Duviri timer
+    if (data.duviriCycle?.expiry) {
+        const duvBody = document.querySelector('#ws-duviri .ws-card-body');
+        if (duvBody) {
+            const timeEl = duvBody.querySelector('div:last-child');
+            if (timeEl && timeEl.style.fontSize === '0.72rem') {
+                timeEl.textContent = `Changes in ${timeUntil(data.duviriCycle.expiry)}`;
+            }
+        }
+    }
+
+    // Update fissure timers
+    const fissureRows = document.querySelectorAll('#ws-fissures .ws-row');
+    if (data.fissures && fissureRows.length > 0) {
+        // Re-render fissures to get accurate times and remove expired ones
+        const now = Date.now();
+        const activeFissures = data.fissures.filter(f => new Date(f.expiry).getTime() > now);
+        if (activeFissures.length !== data.fissures.length) {
+            data.fissures = activeFissures;
+            renderFissures(data.fissures);
+        } else {
+            // Just update the time displays
+            fissureRows.forEach(row => {
+                const timeEl = row.querySelector('.ws-row-right');
+                if (timeEl) {
+                    const text = timeEl.textContent;
+                    // Find matching fissure by node name in the row
+                    const rowText = row.querySelector('.ws-row-text')?.textContent || '';
+                    const matchingFissure = data.fissures.find(f =>
+                        rowText.includes(f.node) || rowText.includes(f.missionType)
+                    );
+                    if (matchingFissure) {
+                        timeEl.textContent = timeUntil(matchingFissure.expiry);
+                    }
+                }
+            });
+        }
+    }
+
+    // Update void storm timers
+    const stormRows = document.querySelectorAll('#ws-voidstorms .ws-row');
+    if (data.voidStorms && stormRows.length > 0) {
+        const now = Date.now();
+        const activeStorms = data.voidStorms.filter(s => new Date(s.expiry).getTime() > now);
+        if (activeStorms.length !== data.voidStorms.length) {
+            data.voidStorms = activeStorms;
+            renderVoidStorms(data.voidStorms);
+        }
+    }
+
+    // Update daily deal timers
+    if (data.dailyDeals) {
+        const now = Date.now();
+        const activeDeals = data.dailyDeals.filter(d => new Date(d.expiry).getTime() > now);
+        if (activeDeals.length !== data.dailyDeals.length) {
+            data.dailyDeals = activeDeals;
+            renderDailyDeals(data.dailyDeals);
+        }
+    }
 }
 
 // --- Void Trader ---
@@ -1581,7 +1807,7 @@ function renderStreamDrops(streams) {
 
     const now = new Date();
 
-    body.innerHTML = streams.slice(0, 10).map(s => {
+    body.innerHTML = '<div class="ws-streams-grid">' + streams.slice(0, 10).map(s => {
         const isLive = now >= s.start && now < s.end;
         const isPast = now >= s.end;
         const statusBadge = isLive ? '<span class="ws-drop-live">LIVE</span>'
@@ -1605,7 +1831,7 @@ function renderStreamDrops(streams) {
                 ${s.drops.length > 0 ? `<div class="ws-drop-rewards">${s.drops.map(d => `<div><i class="fas fa-gift" style="color:var(--gold); font-size:0.55rem; margin-right:0.3rem"></i>${escapeHtml(d)}</div>`).join('')}</div>` : ''}
             </div>
         `;
-    }).join('');
+    }).join('') + '</div>';
     body.classList.remove('ws-loading');
 
     // Check for notifications
@@ -1654,8 +1880,10 @@ function renderCircuit(choices) {
     }
 
     body.innerHTML = choices.map(choice => {
-        const isNormal = (choice.category || '').toLowerCase().includes('normal');
-        const label = isNormal ? 'Normal' : 'Steel Path';
+        const catKey = (choice.categoryKey || choice.category || '').toLowerCase();
+        const isNormal = catKey.includes('normal');
+        const isHard = catKey.includes('hard');
+        const label = isNormal ? 'Normal (Warframes)' : isHard ? 'Steel Path (Weapons)' : capitalize(choice.category || 'Unknown');
         const icon = isNormal ? 'fas fa-circle-play' : 'fas fa-fire';
         const color = isNormal ? '#00e5ff' : '#ffd54f';
         return `
