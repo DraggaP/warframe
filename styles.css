@@ -445,6 +445,17 @@ body {
 .fissure-tier-a { background: rgba(105, 240, 174, 0.3); color: #69f0ae; }
 .fissure-tier-b { background: rgba(0, 229, 255, 0.2); color: #00e5ff; }
 
+/* Streams 2-column grid */
+.ws-streams-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem 1rem;
+}
+
+@media (max-width: 640px) {
+    .ws-streams-grid { grid-template-columns: 1fr; }
+}
+
 /* Twitch drop stream card */
 .ws-drop-card {
     padding: 0.5rem 0;
