@@ -669,6 +669,15 @@ function setupWorldState() {
         fissureFilterValue = this.value;
         if (worldStateData) renderFissures(worldStateData.fissures);
     });
+
+    // Refresh drops button
+    const refreshDropsBtn = document.getElementById('refreshDrops');
+    if (refreshDropsBtn) {
+        refreshDropsBtn.addEventListener('click', () => {
+            streamSchedule = null;
+            fetchStreamSchedule();
+        });
+    }
 }
 
 async function fetchWorldState() {
@@ -728,7 +737,11 @@ async function fetchWorldState() {
         renderStatusBar(worldStateData);
         renderWorldStateCards(worldStateData);
         checkAlertRules(worldStateData);
+        checkFissureNotifications(worldStateData.fissures);
         initStatusBarScroll();
+
+        // Fetch stream schedule (don't block world state rendering)
+        if (!streamSchedule) fetchStreamSchedule();
     } catch (err) {
         console.error('Failed to fetch world state:', err);
     }
@@ -1276,7 +1289,11 @@ function renderFissures(fissures) {
     }
 
     let filtered = fissures;
-    if (fissureFilterValue !== 'all') {
+    if (fissureFilterValue === 's-tier') {
+        filtered = fissures.filter(f => getFissureTier(f) === 'S');
+    } else if (fissureFilterValue === 'a-tier') {
+        filtered = fissures.filter(f => { const t = getFissureTier(f); return t === 'S' || t === 'A'; });
+    } else if (fissureFilterValue !== 'all') {
         filtered = fissures.filter(f => f.tier === fissureFilterValue);
     }
 
@@ -1292,9 +1309,12 @@ function renderFissures(fissures) {
 
     body.innerHTML = filtered.map(f => {
         const tierClass = 'ws-tag-' + (f.tier || '').toLowerCase();
+        const fTier = getFissureTier(f);
+        const fTierInfo = fTier ? FISSURE_TIER_INFO[fTier] : null;
         return `
             <div class="ws-row">
                 <div class="ws-row-left">
+                    ${fTierInfo ? `<span class="fissure-tier ${fTierInfo.css}" title="${fTierInfo.desc}">${fTierInfo.label}</span>` : ''}
                     <span class="ws-tag ${tierClass}">${f.tier || '?'}</span>
                     <span class="ws-row-text"><span class="ws-highlight">${f.missionType}</span> - ${f.node} (${f.enemy})</span>
                 </div>
@@ -1390,6 +1410,241 @@ function renderActiveEvents(events) {
         ` : ''}
     `).join('');
     body.classList.remove('ws-loading');
+}
+
+// ============================================
+// FISSURE TIER SYSTEM
+// S-tier = Void Capture where fissure tier matches node relic drop (infinite relics)
+// A-tier = Void Capture where you get a different tier relic back
+// B-tier = Any Capture mission (fast relic cracking)
+// ============================================
+
+const VOID_RELIC_NODES = {
+    'Hepit (Void)': { relics: ['Lith'], mission: 'Capture' },
+    'Ukko (Void)': { relics: ['Meso', 'Neo'], mission: 'Capture' },
+};
+
+// Also include non-Void Capture nodes that are fast
+const FAST_MISSION_TYPES = ['Capture', 'Exterminate', 'Rescue'];
+
+function getFissureTier(fissure) {
+    if (!fissure) return null;
+    const node = fissure.node || '';
+    const tier = fissure.tier || '';
+    const missionType = fissure.missionType || '';
+
+    // Check Void Capture nodes
+    const voidNode = VOID_RELIC_NODES[node];
+    if (voidNode) {
+        if (voidNode.relics.includes(tier)) {
+            return 'S'; // Same tier relic back = infinite relics
+        }
+        return 'A'; // Different tier relic back but still a free relic
+    }
+
+    // Fast mission types
+    if (FAST_MISSION_TYPES.includes(missionType)) {
+        return 'B'; // Fast mission, good for cracking
+    }
+
+    return null;
+}
+
+const FISSURE_TIER_INFO = {
+    'S': { label: 'S', desc: '1:1 relic (open & get same tier back)', css: 'fissure-tier-s' },
+    'A': { label: 'A', desc: 'Free relic (different tier back)', css: 'fissure-tier-a' },
+    'B': { label: 'B', desc: 'Fast mission', css: 'fissure-tier-b' }
+};
+
+// Track notified fissures to avoid spam
+let notifiedFissures = {};
+
+function checkFissureNotifications(fissures) {
+    if (!fissures || fissures.length === 0) return;
+    const browserEnabled = getStore('notif_browser', false);
+    const discordEnabled = getStore('notif_discord', false);
+    const webhookUrl = getStore('discord_webhook', '');
+    const fissureNotifsEnabled = getStore('notif_fissure_tiers', false);
+
+    if (!fissureNotifsEnabled) return;
+    if (!browserEnabled && !discordEnabled) return;
+
+    fissures.forEach(f => {
+        const fTier = getFissureTier(f);
+        if (!fTier || fTier === 'B') return; // Only notify S and A tier
+
+        const fKey = f.id || `${f.node}_${f.tier}`;
+        if (notifiedFissures[fKey]) return;
+        notifiedFissures[fKey] = true;
+
+        const tierInfo = FISSURE_TIER_INFO[fTier];
+        const msg = `${tierInfo.label}-Tier Fissure: ${f.tier} ${f.missionType} at ${f.node} (${tierInfo.desc})`;
+
+        if (browserEnabled && 'Notification' in window && Notification.permission === 'granted') {
+            new Notification('Warframe - Good Fissure!', {
+                body: msg,
+                tag: fKey,
+                requireInteraction: false
+            });
+        }
+        if (discordEnabled && webhookUrl) {
+            sendDiscordMessage(webhookUrl, msg);
+        }
+    });
+}
+
+// ============================================
+// TWITCH DROPS / STREAM SCHEDULE
+// Data from warframestreams.lol (Google Sheets CSV)
+// ============================================
+
+const STREAMS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQcJWZc9LXpAjKWbMNFrI7Gbry3GfkfsK55k8Mp3EW65rIJhAZZG0W9WGwgrSwAB5J8iaVTeKFWh2Or/pub?output=csv';
+
+let streamSchedule = null;
+
+async function fetchStreamSchedule() {
+    try {
+        const res = await fetch(STREAMS_CSV_URL);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const csv = await res.text();
+        streamSchedule = parseStreamCSV(csv);
+        renderStreamDrops(streamSchedule);
+    } catch (err) {
+        console.error('Failed to fetch stream schedule:', err);
+        const body = document.querySelector('#ws-drops .ws-card-body');
+        if (body) {
+            body.innerHTML = '<div class="ws-empty">Could not load stream schedule. <a href="https://warframestreams.lol" target="_blank" rel="noopener" style="color:var(--accent)">Check warframestreams.lol</a></div>';
+            body.classList.remove('ws-loading');
+        }
+    }
+}
+
+function parseStreamCSV(csv) {
+    const lines = csv.split('\n');
+    const streams = [];
+    // Skip header row
+    for (let i = 1; i < lines.length; i++) {
+        // Handle quoted fields (drops can have commas/newlines inside quotes)
+        const fields = parseCSVLine(lines[i]);
+        if (fields.length < 7) continue;
+
+        const [subject, startDate, startTime, endDate, endTime, location, description] = fields;
+        if (!subject || !startDate) continue;
+
+        const start = new Date(`${startDate}T${startTime}Z`);
+        const end = new Date(`${endDate}T${endTime}Z`);
+        if (isNaN(start.getTime())) continue;
+
+        const hasDrops = description && !description.includes('Drop: NONE') && description.includes('Drop');
+
+        streams.push({
+            title: subject.trim(),
+            start,
+            end,
+            url: (location || '').trim(),
+            drops: description ? description.trim().split('\n').filter(l => l.includes('Drop') && !l.includes('NONE')) : [],
+            hasDrops
+        });
+    }
+
+    // Sort by start date, filter to upcoming/recent
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 2 * 3600000); // Show streams from 2h ago
+    return streams
+        .filter(s => s.end > cutoff)
+        .sort((a, b) => a.start - b.start);
+}
+
+function parseCSVLine(line) {
+    const fields = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') {
+            inQuotes = !inQuotes;
+        } else if (c === ',' && !inQuotes) {
+            fields.push(current);
+            current = '';
+        } else {
+            current += c;
+        }
+    }
+    fields.push(current);
+    return fields;
+}
+
+function renderStreamDrops(streams) {
+    const body = document.querySelector('#ws-drops .ws-card-body');
+    if (!body) return;
+
+    if (!streams || streams.length === 0) {
+        body.innerHTML = '<div class="ws-empty">No upcoming streams scheduled. <a href="https://warframestreams.lol" target="_blank" rel="noopener" style="color:var(--accent)">Check warframestreams.lol</a></div>';
+        body.classList.remove('ws-loading');
+        return;
+    }
+
+    const now = new Date();
+
+    body.innerHTML = streams.slice(0, 10).map(s => {
+        const isLive = now >= s.start && now < s.end;
+        const isPast = now >= s.end;
+        const statusBadge = isLive ? '<span class="ws-drop-live">LIVE</span>'
+            : isPast ? ''
+            : `<span class="ws-drop-upcoming">in ${timeUntil(s.start.toISOString())}</span>`;
+
+        const dateStr = s.start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const timeStr = s.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+        return `
+            <div class="ws-drop-card${isPast ? ' opacity-50' : ''}">
+                <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap">
+                    <span class="ws-drop-title">${escapeHtml(s.title)}</span>
+                    ${statusBadge}
+                    ${s.hasDrops ? '<i class="fas fa-gift" style="color:var(--gold); font-size:0.65rem" title="Has drops"></i>' : ''}
+                </div>
+                <div class="ws-drop-meta">
+                    <span>${dateStr} at ${timeStr}</span>
+                    ${s.url ? `<a href="${s.url}" target="_blank" rel="noopener" class="ws-drop-link"><i class="fab fa-twitch"></i> ${s.url.replace('https://www.twitch.tv/', '').replace('https://twitch.tv/', '')}</a>` : ''}
+                </div>
+                ${s.drops.length > 0 ? `<div class="ws-drop-rewards">${s.drops.map(d => `<div><i class="fas fa-gift" style="color:var(--gold); font-size:0.55rem; margin-right:0.3rem"></i>${escapeHtml(d)}</div>`).join('')}</div>` : ''}
+            </div>
+        `;
+    }).join('');
+    body.classList.remove('ws-loading');
+
+    // Check for notifications
+    checkStreamNotifications(streams);
+}
+
+function checkStreamNotifications(streams) {
+    const browserEnabled = getStore('notif_browser', false);
+    const discordEnabled = getStore('notif_discord', false);
+    const webhookUrl = getStore('discord_webhook', '');
+    const streamNotifsEnabled = getStore('notif_stream_drops', false);
+
+    if (!streamNotifsEnabled) return;
+    if (!browserEnabled && !discordEnabled) return;
+
+    const now = new Date();
+    streams.forEach(s => {
+        if (!s.hasDrops) return;
+        const minsUntil = (s.start - now) / 60000;
+        const notifKey = `stream_${s.start.getTime()}`;
+
+        // Notify 10 minutes before a stream with drops starts
+        if (minsUntil > 0 && minsUntil <= 10 && !notifiedFissures[notifKey]) {
+            notifiedFissures[notifKey] = true;
+            const msg = `${s.title} starts in ~${Math.ceil(minsUntil)} min with Twitch drops!`;
+
+            if (browserEnabled && 'Notification' in window && Notification.permission === 'granted') {
+                new Notification('Warframe - Twitch Drop Soon!', { body: msg, tag: notifKey });
+            }
+            if (discordEnabled && webhookUrl) {
+                sendDiscordMessage(webhookUrl, msg);
+            }
+        }
+    });
 }
 
 // --- The Circuit ---
@@ -1540,6 +1795,24 @@ function setupNotifications() {
         sendDiscordMessage(url, 'Warframe Tracker -- test notification. Your webhook is working!');
     });
 
+    // Fissure tier notifications toggle
+    const fissureToggle = document.getElementById('fissureNotifToggle');
+    if (fissureToggle) {
+        fissureToggle.checked = getStore('notif_fissure_tiers', false);
+        fissureToggle.addEventListener('change', () => {
+            setStore('notif_fissure_tiers', fissureToggle.checked);
+        });
+    }
+
+    // Stream drop notifications toggle
+    const streamToggle = document.getElementById('streamNotifToggle');
+    if (streamToggle) {
+        streamToggle.checked = getStore('notif_stream_drops', false);
+        streamToggle.addEventListener('change', () => {
+            setStore('notif_stream_drops', streamToggle.checked);
+        });
+    }
+
     // Alert rules
     setupAlertRuleModal();
     renderAlertRules();
@@ -1569,6 +1842,10 @@ function refreshNotifUI() {
     document.getElementById('browserNotifToggle').checked = getStore('notif_browser', false);
     document.getElementById('discordNotifToggle').checked = getStore('notif_discord', false);
     document.getElementById('discordWebhookUrl').value = getStore('discord_webhook', '');
+    const fissureToggle = document.getElementById('fissureNotifToggle');
+    if (fissureToggle) fissureToggle.checked = getStore('notif_fissure_tiers', false);
+    const streamToggle = document.getElementById('streamNotifToggle');
+    if (streamToggle) streamToggle.checked = getStore('notif_stream_drops', false);
     updateBrowserNotifStatus();
     renderAlertRules();
 }
