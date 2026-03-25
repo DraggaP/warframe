@@ -419,6 +419,96 @@ body {
     grid-column: 1 / -1;
 }
 
+/* Scrollable card - used for side-by-side compact layout */
+.ws-card-scrollable .ws-card-body {
+    max-height: 280px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--bg-raised) transparent;
+}
+.ws-card-scrollable .ws-card-body::-webkit-scrollbar { width: 4px; }
+.ws-card-scrollable .ws-card-body::-webkit-scrollbar-track { background: transparent; }
+.ws-card-scrollable .ws-card-body::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 2px; }
+
+/* Fissure tier badges */
+.fissure-tier {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 0.08rem 0.3rem;
+    border-radius: 3px;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+.fissure-tier-s { background: rgba(255, 213, 79, 0.3); color: #ffd54f; }
+.fissure-tier-a { background: rgba(105, 240, 174, 0.3); color: #69f0ae; }
+.fissure-tier-b { background: rgba(0, 229, 255, 0.2); color: #00e5ff; }
+
+/* Twitch drop stream card */
+.ws-drop-card {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.ws-drop-card:last-child { border-bottom: none; }
+
+.ws-drop-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.ws-drop-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+}
+
+.ws-drop-rewards {
+    margin-top: 0.3rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.ws-drop-live {
+    display: inline-block;
+    background: rgba(255, 82, 82, 0.2);
+    color: #ff5252;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    font-family: var(--font-display);
+    animation: pulse-live 1.5s ease infinite;
+}
+
+@keyframes pulse-live {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.ws-drop-upcoming {
+    display: inline-block;
+    background: rgba(145, 70, 255, 0.15);
+    color: #9146ff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    font-family: var(--font-display);
+}
+
+.ws-drop-link {
+    color: #9146ff;
+    text-decoration: none;
+    font-size: 0.72rem;
+}
+.ws-drop-link:hover { text-decoration: underline; }
+
 .ws-card-header {
     display: flex;
     align-items: center;
